@@ -7,7 +7,7 @@
 // During local development, set to "http://localhost:8000"
 const API_BASE = window.location.hostname === "localhost"
   ? "http://localhost:8000"
-  : "https://solar-flare-api.onrender.com"; // ← Update with your Render URL
+  : "https://solar-flare-api-1mvi.onrender.com";
 
 const REFRESH_INTERVAL_MS = 60000; // 60 seconds
 

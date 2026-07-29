@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://solar-flare-api.onrender.com/api/$1"
+      "destination": "https://solar-flare-api-1mvi.onrender.com/api/$1"
     }
   ]
 }
