@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SolarSentinel — Space Weather Prediction Dashboard</title>
+  <meta name="description" content="Real-time solar flare and space weather prediction powered by NASA DONKI, NOAA SWPC data, and machine learning. Monitor solar activity, CMEs, geomagnetic storms, and Kp index live." />
+  <meta name="keywords" content="solar flare prediction, space weather, NASA, NOAA, geomagnetic storm, Kp index, CME" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Animated space background -->
+  <div class="space-bg" id="spaceBg">
+    <div class="stars-layer stars-slow"></div>
+    <div class="stars-layer stars-medium"></div>
+    <div class="stars-layer stars-fast"></div>
+    <div class="solar-glow"></div>
+  </div>
+
+  <!-- Toast notification container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ─── HEADER ─── -->
+  <header class="header" id="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="10" fill="url(#solarGrad)"/>
+            <path d="M20 2v5M20 33v5M2 20h5M33 20h5M6.3 6.3l3.5 3.5M30.2 30.2l3.5 3.5M6.3 33.7l3.5-3.5M30.2 9.8l3.5-3.5" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/>
+            <defs>
+              <radialGradient id="solarGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#fff176"/>
+                <stop offset="60%" stop-color="#ff9800"/>
+                <stop offset="100%" stop-color="#ff5722"/>
+              </radialGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="logo-name">SolarSentinel</span>
+          <span class="logo-sub">Space Weather Intelligence</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a href="#overview" class="nav-link active" id="nav-overview">Overview</a>
+        <a href="#prediction" class="nav-link" id="nav-prediction">Prediction</a>
+        <a href="#events" class="nav-link" id="nav-events">Events</a>
+        <a href="#geomagnetic" class="nav-link" id="nav-geo">Geomagnetic</a>
+      </nav>
+
+      <div class="header-status">
+        <div class="live-indicator" id="liveIndicator">
+          <span class="live-dot"></span>
+          <span>LIVE</span>
+        </div>
+        <div class="utc-clock" id="utcClock">--:--:-- UTC</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── MAIN CONTENT ─── -->
+  <main class="main">
+
+    <!-- ─── HERO / OVERVIEW SECTION ─── -->
+    <section class="section" id="overview">
+      <div class="section-header">
+        <h1 class="section-title">Solar Activity <span class="gradient-text">Command Center</span></h1>
+        <p class="section-subtitle">Real-time monitoring of solar flares, CMEs, and geomagnetic disturbances using NASA & NOAA data feeds</p>
+      </div>
+
+      <!-- Key Metrics Grid -->
+      <div class="metrics-grid" id="metricsGrid">
+        <div class="metric-card" id="card-kp">
+          <div class="metric-icon kp-icon">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="metric-info">
+            <div class="metric-label">Kp Index (Current)</div>
+            <div class="metric-value" id="kpValue">–</div>
+            <div class="metric-sub" id="kpStatus">Loading...</div>
+          </div>
+          <div class="metric-badge" id="kpBadge"></div>
+        </div>
+
+        <div class="metric-card" id="card-flares">
+          <div class="metric-icon flare-icon">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="metric-info">
+            <div class="metric-label">Flares (Last 7 Days)</div>
+            <div class="metric-value" id="flareCount">–</div>
+            <div class="metric-sub" id="flareLatest">Loading...</div>
+          </div>
+          <div class="metric-badge" id="flareBadge"></div>
+        </div>
+
+        <div class="metric-card" id="card-cme">
+          <div class="metric-icon cme-icon">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <div class="metric-info">
+            <div class="metric-label">CMEs (Last 7 Days)</div>
+            <div class="metric-value" id="cmeCount">–</div>
+            <div class="metric-sub" id="cmeLatestSpeed">Loading...</div>
+          </div>
+          <div class="metric-badge" id="cmeBadge"></div>
+        </div>
+
+        <div class="metric-card" id="card-bz">
+          <div class="metric-icon bz-icon">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="metric-info">
+            <div class="metric-label">Bz (Solar Wind)</div>
+            <div class="metric-value" id="bzValue">–</div>
+            <div class="metric-sub" id="bzStatus">Loading...</div>
+          </div>
+          <div class="metric-badge" id="bzBadge"></div>
+        </div>
+      </div>
+
+      <!-- Solar Activity Index Gauge -->
+      <div class="gauge-section">
+        <div class="gauge-card">
+          <div class="gauge-header">
+            <h2 class="gauge-title">Solar Activity Index</h2>
+            <div class="gauge-updated" id="gaugeUpdated">Updating...</div>
+          </div>
+          <div class="gauge-body">
+            <div class="gauge-wrapper">
+              <canvas id="gaugeCanvas" width="300" height="180"></canvas>
+              <div class="gauge-center-text">
+                <div class="gauge-value-text" id="gaugeValue">–</div>
+                <div class="gauge-label-text" id="gaugeLabel">Activity</div>
+              </div>
+            </div>
+            <div class="gauge-legend">
+              <div class="legend-item"><span class="legend-dot quiet-dot"></span>Quiet (0-2)</div>
+              <div class="legend-item"><span class="legend-dot minor-dot"></span>Minor (3-4)</div>
+              <div class="legend-item"><span class="legend-dot moderate-dot"></span>Moderate (5-6)</div>
+              <div class="legend-item"><span class="legend-dot severe-dot"></span>Severe (7+)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerts Panel -->
+        <div class="alerts-card">
+          <div class="alerts-header">
+            <h2 class="alerts-title">
+              <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Active Alerts
+            </h2>
+            <span class="alerts-count" id="alertCount">0</span>
+          </div>
+          <div class="alerts-body" id="alertsBody">
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <span>Fetching alerts...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PREDICTION SECTION ─── -->
+    <section class="section" id="prediction">
+      <div class="section-header">
+        <h2 class="section-title">ML <span class="gradient-text">Flare Prediction</span></h2>
+        <p class="section-subtitle">Random Forest model trained on NASA DONKI historical data — predicting next 24-hour solar flare class</p>
+      </div>
+
+      <div class="prediction-layout">
+        <!-- Main Prediction Card -->
+        <div class="prediction-main-card">
+          <div class="prediction-shimmer"></div>
+          <div class="prediction-content">
+            <div class="pred-header">
+              <div class="pred-title">Next 24-Hour Forecast</div>
+              <div class="pred-updated" id="predUpdated">–</div>
+            </div>
+
+            <div class="pred-result" id="predResult">
+              <div class="pred-class-badge" id="predClassBadge">–</div>
+              <div class="pred-class-label">Predicted Class</div>
+              <div class="pred-confidence" id="predConfidence">Confidence: –%</div>
+            </div>
+
+            <div class="pred-probs" id="predProbs">
+              <div class="prob-bar-wrap">
+                <div class="prob-label">Quiet</div>
+                <div class="prob-track"><div class="prob-fill quiet-fill" id="prob-quiet" style="width:0%"></div></div>
+                <div class="prob-pct" id="pct-quiet">–%</div>
+              </div>
+              <div class="prob-bar-wrap">
+                <div class="prob-label">C-class</div>
+                <div class="prob-track"><div class="prob-fill c-fill" id="prob-c" style="width:0%"></div></div>
+                <div class="prob-pct" id="pct-c">–%</div>
+              </div>
+              <div class="prob-bar-wrap">
+                <div class="prob-label">M-class</div>
+                <div class="prob-track"><div class="prob-fill m-fill" id="prob-m" style="width:0%"></div></div>
+                <div class="prob-pct" id="pct-m">–%</div>
+              </div>
+              <div class="prob-bar-wrap">
+                <div class="prob-label">X-class</div>
+                <div class="prob-track"><div class="prob-fill x-fill" id="prob-x" style="width:0%"></div></div>
+                <div class="prob-pct" id="pct-x">–%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature Importances -->
+        <div class="features-card">
+          <h3 class="features-title">Model Feature Importances</h3>
+          <div class="features-list" id="featureList">
+            <div class="loading-state"><div class="spinner"></div><span>Running model...</span></div>
+          </div>
+
+          <div class="model-meta" id="modelMeta">
+            <div class="meta-row"><span>Algorithm</span><span>Random Forest</span></div>
+            <div class="meta-row"><span>Data Source</span><span>NASA DONKI + NOAA</span></div>
+            <div class="meta-row" id="metaTrainedAt"><span>Last Trained</span><span>–</span></div>
+            <div class="meta-row" id="metaInputFlares"><span>Recent Flares (7d)</span><span>–</span></div>
+            <div class="meta-row" id="metaInputKp"><span>Avg Kp Index</span><span>–</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── EVENTS SECTION ─── -->
+    <section class="section" id="events">
+      <div class="section-header">
+        <h2 class="section-title">Recent <span class="gradient-text">Space Events</span></h2>
+        <p class="section-subtitle">Solar flares and coronal mass ejections recorded in the last 30 days</p>
+      </div>
+
+      <!-- Flare Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Solar Flare History (30 Days)</h3>
+          <div class="chart-legend">
+            <span class="chart-legend-item"><span class="cl-dot" style="background:#00d4aa"></span>C-class</span>
+            <span class="chart-legend-item"><span class="cl-dot" style="background:#ff9800"></span>M-class</span>
+            <span class="chart-legend-item"><span class="cl-dot" style="background:#f44336"></span>X-class</span>
+          </div>
+        </div>
+        <div class="chart-body">
+          <canvas id="flareChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Events Feed -->
+      <div class="events-grid">
+        <div class="events-column">
+          <div class="events-column-header">
+            <h3>☀️ Solar Flares</h3>
+            <span class="tab-badge" id="flareTabCount">0</span>
+          </div>
+          <div class="events-list" id="flaresList">
+            <div class="loading-state"><div class="spinner"></div><span>Loading flares...</span></div>
+          </div>
+        </div>
+        <div class="events-column">
+          <div class="events-column-header">
+            <h3>💨 Coronal Mass Ejections</h3>
+            <span class="tab-badge" id="cmeTabCount">0</span>
+          </div>
+          <div class="events-list" id="cmeList">
+            <div class="loading-state"><div class="spinner"></div><span>Loading CMEs...</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── GEOMAGNETIC SECTION ─── -->
+    <section class="section" id="geomagnetic">
+      <div class="section-header">
+        <h2 class="section-title">Geomagnetic <span class="gradient-text">Storm Tracker</span></h2>
+        <p class="section-subtitle">Kp index trends and planetary geomagnetic disturbance monitoring</p>
+      </div>
+
+      <!-- Kp Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Kp Index — Last 72 Hours</h3>
+          <div class="kp-scale-legend">
+            <span style="color:#00d4aa">G0 (0-3): Quiet</span>
+            <span style="color:#ff9800">G1-G2 (4-5): Minor</span>
+            <span style="color:#f44336">G3+ (6+): Severe</span>
+          </div>
+        </div>
+        <div class="chart-body">
+          <canvas id="kpChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Storm History -->
+      <div class="storm-list-card">
+        <h3 class="storm-title">Recent Geomagnetic Storms</h3>
+        <div class="storm-list" id="stormList">
+          <div class="loading-state"><div class="spinner"></div><span>Loading storms...</span></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─── FOOTER ─── -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span class="footer-logo">☀️ SolarSentinel</span>
+        <span class="footer-desc">Powered by NASA DONKI API &amp; NOAA SWPC</span>
+      </div>
+      <div class="footer-right">
+        <span id="lastRefresh">Last refresh: –</span>
+        <span class="footer-sep">·</span>
+        <span>Auto-refresh: 60s</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

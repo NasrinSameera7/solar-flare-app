@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://solar-flare-api.onrender.com/api/$1"
+    }
+  ]
+}
