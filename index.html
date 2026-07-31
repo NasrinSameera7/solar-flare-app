@@ -4,47 +4,181 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SolarSentinel — Space Weather Prediction Dashboard</title>
-  <meta name="description" content="Real-time solar flare and space weather prediction powered by NASA DONKI, NOAA SWPC data, and machine learning. Monitor solar activity, CMEs, geomagnetic storms, and Kp index live." />
-  <meta name="keywords" content="solar flare prediction, space weather, NASA, NOAA, geomagnetic storm, Kp index, CME" />
-
-  <!-- Google Fonts -->
+  <meta name="description" content="Real-time solar flare and space weather prediction powered by NASA DONKI, NOAA SWPC data, and machine learning." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-  <link rel="stylesheet" href="style.css" />
+  <style>
+:root{--bg-void:#020510;--bg-space:#050816;--bg-deep:#080c1a;--bg-card:rgba(16,24,48,0.6);--solar-orange:#ff6b35;--solar-yellow:#ffd166;--plasma-purple:#7c3aed;--aurora-green:#00d4aa;--corona-blue:#3b82f6;--flare-red:#ef4444;--storm-cyan:#06b6d4;--border-glow:rgba(255,107,53,0.25);--border-subtle:rgba(255,255,255,0.07);--border-card:rgba(255,255,255,0.1);--font-display:'Outfit',sans-serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;--shadow-card:0 4px 24px rgba(0,0,0,0.5),0 1px 0 rgba(255,255,255,0.05) inset;--shadow-glow-orange:0 0 30px rgba(255,107,53,0.3);--shadow-glow-purple:0 0 30px rgba(124,58,237,0.3);--trans-smooth:300ms cubic-bezier(0.4,0,0.2,1)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg-void);color:#e2e8f0;min-height:100vh;overflow-x:hidden;line-height:1.6}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg-deep)}::-webkit-scrollbar-thumb{background:var(--plasma-purple);border-radius:3px}
+.space-bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.solar-glow{position:absolute;top:-30%;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(ellipse,rgba(255,107,53,0.12) 0%,rgba(124,58,237,0.06) 40%,transparent 70%);animation:solarPulse 8s ease-in-out infinite}
+@keyframes solarPulse{0%,100%{transform:translateX(-50%) scale(1);opacity:.8}50%{transform:translateX(-50%) scale(1.15);opacity:1}}
+.stars-layer{position:absolute;inset:0;background-image:radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.6) 0%,transparent 100%),radial-gradient(1px 1px at 60% 10%,rgba(255,255,255,.5) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 80% 50%,rgba(255,255,255,.4) 0%,transparent 100%),radial-gradient(1px 1px at 40% 80%,rgba(255,255,255,.7) 0%,transparent 100%),radial-gradient(1px 1px at 10% 60%,rgba(255,255,255,.5) 0%,transparent 100%),radial-gradient(1px 1px at 90% 70%,rgba(255,255,255,.6) 0%,transparent 100%),radial-gradient(2px 2px at 70% 20%,rgba(200,200,255,.4) 0%,transparent 100%),radial-gradient(1px 1px at 30% 50%,rgba(255,255,255,.5) 0%,transparent 100%);background-size:200px 200px}
+.stars-slow{animation:drift 120s linear infinite}.stars-medium{animation:drift 80s linear infinite;background-size:150px 150px}.stars-fast{animation:drift 50s linear infinite;background-size:100px 100px;opacity:.5}
+@keyframes drift{from{background-position:0 0}to{background-position:200px 200px}}
+.header{position:sticky;top:0;z-index:100;background:rgba(5,8,22,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-subtle);padding:0 2rem}
+.header-inner{max-width:1400px;margin:0 auto;height:70px;display:flex;align-items:center;justify-content:space-between;gap:2rem}
+.logo{display:flex;align-items:center;gap:12px;cursor:default}
+.logo-icon{width:40px;height:40px;filter:drop-shadow(0 0 12px rgba(255,107,53,.6))}
+.logo-text{display:flex;flex-direction:column}
+.logo-name{font-family:var(--font-display);font-weight:700;font-size:1.2rem;background:linear-gradient(135deg,#ff6b35,#ffd166);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2}
+.logo-sub{font-size:.65rem;color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase}
+.nav{display:flex;gap:.25rem}
+.nav-link{padding:.4rem 1rem;border-radius:8px;color:rgba(255,255,255,.5);text-decoration:none;font-size:.875rem;font-weight:500;transition:var(--trans-smooth)}
+.nav-link:hover{color:white;background:rgba(255,255,255,.08)}.nav-link.active{color:var(--solar-orange);background:rgba(255,107,53,.12)}
+.header-status{display:flex;align-items:center;gap:1rem}
+.live-indicator{display:flex;align-items:center;gap:6px;font-size:.75rem;font-weight:600;color:var(--aurora-green);letter-spacing:.08em}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--aurora-green);box-shadow:0 0 8px var(--aurora-green);animation:blink 1.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.utc-clock{font-family:var(--font-mono);font-size:.8rem;color:rgba(255,255,255,.5);letter-spacing:.05em}
+.main{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:2rem}
+.section{margin-bottom:4rem}
+.section-header{margin-bottom:2rem;text-align:center}
+.section-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;color:white;line-height:1.2;margin-bottom:.75rem}
+.gradient-text{background:linear-gradient(135deg,var(--solar-orange),var(--plasma-purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.section-subtitle{font-size:1rem;color:rgba(255,255,255,.5);max-width:700px;margin:0 auto}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem;margin-bottom:2rem}
+.metric-card{background:var(--bg-card);border:1px solid var(--border-card);border-radius:16px;padding:1.5rem;display:flex;align-items:center;gap:1rem;position:relative;overflow:hidden;transition:var(--trans-smooth);backdrop-filter:blur(12px);box-shadow:var(--shadow-card)}
+.metric-card::before{content:'';position:absolute;inset:0;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.04) 0%,transparent 100%);pointer-events:none}
+.metric-card:hover{transform:translateY(-2px);border-color:var(--border-glow);box-shadow:var(--shadow-card),var(--shadow-glow-orange)}
+.metric-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.metric-icon svg{width:22px;height:22px}
+.kp-icon{background:rgba(6,182,212,.15);color:var(--storm-cyan);box-shadow:0 0 20px rgba(6,182,212,.2)}
+.flare-icon{background:rgba(255,107,53,.15);color:var(--solar-orange);box-shadow:0 0 20px rgba(255,107,53,.2)}
+.cme-icon{background:rgba(124,58,237,.15);color:var(--plasma-purple);box-shadow:0 0 20px rgba(124,58,237,.2)}
+.bz-icon{background:rgba(0,212,170,.15);color:var(--aurora-green);box-shadow:0 0 20px rgba(0,212,170,.2)}
+.metric-info{flex:1}
+.metric-label{font-size:.75rem;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem}
+.metric-value{font-family:var(--font-display);font-size:2rem;font-weight:700;color:white;line-height:1;transition:var(--trans-smooth)}
+.metric-sub{font-size:.75rem;color:rgba(255,255,255,.45);margin-top:.25rem}
+.metric-badge{position:absolute;top:1rem;right:1rem;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.08em}
+.gauge-section{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+@media(max-width:900px){.gauge-section{grid-template-columns:1fr}}
+.gauge-card,.alerts-card{background:var(--bg-card);border:1px solid var(--border-card);border-radius:20px;padding:1.75rem;backdrop-filter:blur(12px);box-shadow:var(--shadow-card)}
+.gauge-header,.alerts-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.gauge-title,.alerts-title{font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:white;display:flex;align-items:center;gap:8px}
+.gauge-updated{font-size:.7rem;color:rgba(255,255,255,.35)}
+.gauge-body{display:flex;align-items:center;gap:2rem;flex-wrap:wrap}
+.gauge-wrapper{position:relative;display:flex;align-items:center;justify-content:center}
+.gauge-center-text{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);text-align:center}
+.gauge-value-text{font-family:var(--font-display);font-size:2.2rem;font-weight:800;color:white;line-height:1}
+.gauge-label-text{font-size:.7rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;margin-top:4px}
+.gauge-legend{display:flex;flex-direction:column;gap:.5rem}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:.8rem;color:rgba(255,255,255,.6)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.quiet-dot{background:var(--aurora-green)}.minor-dot{background:var(--solar-yellow)}.moderate-dot{background:var(--solar-orange)}.severe-dot{background:var(--flare-red)}
+.alerts-count{background:var(--flare-red);color:white;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;min-width:22px;text-align:center}
+.alerts-body{display:flex;flex-direction:column;gap:.75rem;max-height:280px;overflow-y:auto}
+.alert-item{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:.875rem 1rem;animation:fadeSlideIn .4s ease}
+.alert-item.warning{background:rgba(255,152,0,.08);border-color:rgba(255,152,0,.25)}
+.alert-time{font-size:.7rem;color:rgba(255,255,255,.4);font-family:var(--font-mono);margin-bottom:4px}
+.alert-msg{font-size:.8rem;color:rgba(255,255,255,.8);line-height:1.4}
+.no-alerts{text-align:center;padding:2rem;color:rgba(255,255,255,.3);font-size:.875rem}
+.prediction-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:1.25rem}
+@media(max-width:900px){.prediction-layout{grid-template-columns:1fr}}
+.prediction-main-card{background:var(--bg-card);border:1px solid rgba(124,58,237,.3);border-radius:20px;padding:2rem;backdrop-filter:blur(12px);box-shadow:var(--shadow-card),var(--shadow-glow-purple);position:relative;overflow:hidden}
+.prediction-shimmer{position:absolute;top:-50%;right:-50%;width:400px;height:400px;background:radial-gradient(circle,rgba(124,58,237,.15) 0%,transparent 70%);animation:shimmerRotate 10s linear infinite;pointer-events:none}
+@keyframes shimmerRotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.prediction-content{position:relative;z-index:1}
+.pred-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.pred-title{font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:white}
+.pred-updated{font-size:.7rem;color:rgba(255,255,255,.35)}
+.pred-result{text-align:center;padding:1.5rem 0;margin-bottom:1.5rem}
+.pred-class-badge{display:inline-block;font-family:var(--font-display);font-size:3rem;font-weight:900;padding:.5rem 2rem;border-radius:16px;margin-bottom:.5rem;transition:var(--trans-smooth)}
+.pred-class-label{font-size:.75rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em}
+.pred-confidence{font-size:1.1rem;color:rgba(255,255,255,.7);margin-top:.5rem;font-weight:600}
+.pred-probs{display:flex;flex-direction:column;gap:.875rem}
+.prob-bar-wrap{display:grid;grid-template-columns:80px 1fr 50px;align-items:center;gap:.75rem}
+.prob-label{font-size:.8rem;color:rgba(255,255,255,.6);font-weight:500}
+.prob-track{height:8px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+.prob-fill{height:100%;border-radius:999px;transition:width 1s cubic-bezier(.34,1.56,.64,1)}
+.quiet-fill{background:linear-gradient(90deg,var(--aurora-green),#00f5c4)}
+.c-fill{background:linear-gradient(90deg,var(--storm-cyan),#67e8f9)}
+.m-fill{background:linear-gradient(90deg,var(--solar-orange),#fbbf24)}
+.x-fill{background:linear-gradient(90deg,var(--flare-red),#ff6b6b)}
+.prob-pct{font-size:.8rem;color:rgba(255,255,255,.6);font-family:var(--font-mono);text-align:right}
+.features-card{background:var(--bg-card);border:1px solid var(--border-card);border-radius:20px;padding:1.75rem;backdrop-filter:blur(12px);box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:1.25rem}
+.features-title{font-family:var(--font-display);font-size:1rem;font-weight:700;color:white}
+.features-list{display:flex;flex-direction:column;gap:.5rem;flex:1}
+.feature-bar-wrap{display:flex;flex-direction:column;gap:4px}
+.feature-name{font-size:.72rem;color:rgba(255,255,255,.5);text-transform:capitalize}
+.feature-track{height:6px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden}
+.feature-fill{height:100%;background:linear-gradient(90deg,var(--plasma-purple),var(--corona-blue));border-radius:999px;transition:width 1.2s ease}
+.model-meta{display:flex;flex-direction:column;gap:.5rem}
+.meta-row{display:flex;justify-content:space-between;font-size:.75rem;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.5)}
+.meta-row span:last-child{color:white;font-weight:500}
+.chart-card{background:var(--bg-card);border:1px solid var(--border-card);border-radius:20px;padding:1.75rem;backdrop-filter:blur(12px);box-shadow:var(--shadow-card);margin-bottom:1.5rem}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem}
+.chart-title{font-family:var(--font-display);font-size:1rem;font-weight:700;color:white}
+.chart-body{height:280px;position:relative}
+.chart-legend{display:flex;gap:1.25rem}
+.chart-legend-item{display:flex;align-items:center;gap:6px;font-size:.75rem;color:rgba(255,255,255,.6)}
+.cl-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.kp-scale-legend{display:flex;gap:1.25rem;flex-wrap:wrap;font-size:.72rem}
+.kp-scale-legend span{font-weight:500}
+.events-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+@media(max-width:900px){.events-grid{grid-template-columns:1fr}}
+.events-column{background:var(--bg-card);border:1px solid var(--border-card);border-radius:20px;overflow:hidden;backdrop-filter:blur(12px);box-shadow:var(--shadow-card)}
+.events-column-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-subtle);font-family:var(--font-display);font-weight:700;font-size:.95rem;color:white}
+.tab-badge{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px}
+.events-list{max-height:400px;overflow-y:auto}
+.event-item{display:flex;align-items:flex-start;gap:1rem;padding:1rem 1.5rem;border-bottom:1px solid rgba(255,255,255,.04);transition:150ms ease;animation:fadeSlideIn .4s ease}
+.event-item:hover{background:rgba(255,255,255,.03)}.event-item:last-child{border-bottom:none}
+.event-class{font-family:var(--font-display);font-size:.9rem;font-weight:800;padding:4px 10px;border-radius:8px;flex-shrink:0;min-width:58px;text-align:center}
+.cls-x{background:rgba(239,68,68,.2);color:#f87171}.cls-m{background:rgba(255,152,0,.2);color:#fbbf24}.cls-c{background:rgba(0,212,170,.15);color:var(--aurora-green)}.cls-b{background:rgba(59,130,246,.15);color:#60a5fa}.cls-q{background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)}
+.event-info{flex:1}
+.event-time{font-size:.72rem;color:rgba(255,255,255,.4);font-family:var(--font-mono);margin-bottom:3px}
+.event-loc{font-size:.78rem;color:rgba(255,255,255,.65)}
+.event-note{font-size:.72rem;color:rgba(255,255,255,.4);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.storm-list-card{background:var(--bg-card);border:1px solid var(--border-card);border-radius:20px;padding:1.75rem;backdrop-filter:blur(12px);box-shadow:var(--shadow-card)}
+.storm-title{font-family:var(--font-display);font-size:1rem;font-weight:700;color:white;margin-bottom:1.25rem}
+.storm-list{display:flex;flex-direction:column;gap:.75rem}
+.storm-item{display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.15);border-radius:12px;animation:fadeSlideIn .4s ease}
+.storm-severity{font-family:var(--font-display);font-size:1.4rem;font-weight:900}
+.storm-details{flex:1}
+.storm-time{font-size:.72rem;color:rgba(255,255,255,.4);font-family:var(--font-mono)}
+.storm-desc{font-size:.85rem;color:rgba(255,255,255,.75);margin-top:2px}
+.loading-state{display:flex;align-items:center;justify-content:center;gap:.75rem;padding:2rem;color:rgba(255,255,255,.3);font-size:.875rem}
+.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--solar-orange);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast-container{position:fixed;top:90px;right:1.5rem;z-index:999;display:flex;flex-direction:column;gap:.5rem;pointer-events:none}
+.toast{background:rgba(16,24,48,.95);border:1px solid var(--border-card);border-radius:12px;padding:.875rem 1.25rem;font-size:.85rem;color:white;backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.5);animation:toastIn .4s cubic-bezier(.34,1.56,.64,1);max-width:320px}
+.toast.alert-toast{border-color:rgba(239,68,68,.4)}.toast.success-toast{border-color:rgba(0,212,170,.4)}
+@keyframes toastIn{from{transform:translateX(100px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes toastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(100px);opacity:0}}
+.footer{position:relative;z-index:1;border-top:1px solid var(--border-subtle);background:rgba(5,8,22,.6);backdrop-filter:blur(12px);padding:1.25rem 2rem}
+.footer-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+.footer-left{display:flex;align-items:center;gap:1rem}
+.footer-logo{font-family:var(--font-display);font-weight:700;font-size:1rem;color:white}
+.footer-desc,.footer-right{font-size:.75rem;color:rgba(255,255,255,.35)}
+.footer-right{display:flex;align-items:center;gap:.5rem}
+.footer-sep{opacity:.3}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:768px){.nav{display:none}.main{padding:1rem}.gauge-body{flex-direction:column}.prob-bar-wrap{grid-template-columns:70px 1fr 40px}}
+  </style>
 </head>
 <body>
-
-  <!-- Animated space background -->
   <div class="space-bg" id="spaceBg">
     <div class="stars-layer stars-slow"></div>
     <div class="stars-layer stars-medium"></div>
     <div class="stars-layer stars-fast"></div>
     <div class="solar-glow"></div>
   </div>
-
-  <!-- Toast notification container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- ─── HEADER ─── -->
-  <header class="header" id="header">
+  <header class="header">
     <div class="header-inner">
       <div class="logo">
         <div class="logo-icon">
           <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="20" cy="20" r="10" fill="url(#solarGrad)"/>
             <path d="M20 2v5M20 33v5M2 20h5M33 20h5M6.3 6.3l3.5 3.5M30.2 30.2l3.5 3.5M6.3 33.7l3.5-3.5M30.2 9.8l3.5-3.5" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/>
-            <defs>
-              <radialGradient id="solarGrad" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#fff176"/>
-                <stop offset="60%" stop-color="#ff9800"/>
-                <stop offset="100%" stop-color="#ff5722"/>
-              </radialGradient>
-            </defs>
+            <defs><radialGradient id="solarGrad" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff176"/><stop offset="60%" stop-color="#ff9800"/><stop offset="100%" stop-color="#ff5722"/></radialGradient></defs>
           </svg>
         </div>
         <div class="logo-text">
@@ -52,99 +186,54 @@
           <span class="logo-sub">Space Weather Intelligence</span>
         </div>
       </div>
-
       <nav class="nav">
         <a href="#overview" class="nav-link active" id="nav-overview">Overview</a>
         <a href="#prediction" class="nav-link" id="nav-prediction">Prediction</a>
         <a href="#events" class="nav-link" id="nav-events">Events</a>
         <a href="#geomagnetic" class="nav-link" id="nav-geo">Geomagnetic</a>
       </nav>
-
       <div class="header-status">
-        <div class="live-indicator" id="liveIndicator">
-          <span class="live-dot"></span>
-          <span>LIVE</span>
-        </div>
+        <div class="live-indicator"><span class="live-dot"></span><span>LIVE</span></div>
         <div class="utc-clock" id="utcClock">--:--:-- UTC</div>
       </div>
     </div>
   </header>
 
-  <!-- ─── MAIN CONTENT ─── -->
   <main class="main">
-
-    <!-- ─── HERO / OVERVIEW SECTION ─── -->
     <section class="section" id="overview">
       <div class="section-header">
         <h1 class="section-title">Solar Activity <span class="gradient-text">Command Center</span></h1>
         <p class="section-subtitle">Real-time monitoring of solar flares, CMEs, and geomagnetic disturbances using NASA & NOAA data feeds</p>
       </div>
-
-      <!-- Key Metrics Grid -->
-      <div class="metrics-grid" id="metricsGrid">
-        <div class="metric-card" id="card-kp">
-          <div class="metric-icon kp-icon">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="metric-info">
-            <div class="metric-label">Kp Index (Current)</div>
-            <div class="metric-value" id="kpValue">–</div>
-            <div class="metric-sub" id="kpStatus">Loading...</div>
-          </div>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon kp-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="metric-info"><div class="metric-label">Kp Index (Current)</div><div class="metric-value" id="kpValue">–</div><div class="metric-sub" id="kpStatus">Loading...</div></div>
           <div class="metric-badge" id="kpBadge"></div>
         </div>
-
-        <div class="metric-card" id="card-flares">
-          <div class="metric-icon flare-icon">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="metric-info">
-            <div class="metric-label">Flares (Last 7 Days)</div>
-            <div class="metric-value" id="flareCount">–</div>
-            <div class="metric-sub" id="flareLatest">Loading...</div>
-          </div>
+        <div class="metric-card">
+          <div class="metric-icon flare-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="metric-info"><div class="metric-label">Flares (Last 7 Days)</div><div class="metric-value" id="flareCount">–</div><div class="metric-sub" id="flareLatest">Loading...</div></div>
           <div class="metric-badge" id="flareBadge"></div>
         </div>
-
-        <div class="metric-card" id="card-cme">
-          <div class="metric-icon cme-icon">
-            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          </div>
-          <div class="metric-info">
-            <div class="metric-label">CMEs (Last 7 Days)</div>
-            <div class="metric-value" id="cmeCount">–</div>
-            <div class="metric-sub" id="cmeLatestSpeed">Loading...</div>
-          </div>
+        <div class="metric-card">
+          <div class="metric-icon cme-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <div class="metric-info"><div class="metric-label">CMEs (Last 7 Days)</div><div class="metric-value" id="cmeCount">–</div><div class="metric-sub" id="cmeLatestSpeed">Loading...</div></div>
           <div class="metric-badge" id="cmeBadge"></div>
         </div>
-
-        <div class="metric-card" id="card-bz">
-          <div class="metric-icon bz-icon">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="metric-info">
-            <div class="metric-label">Bz (Solar Wind)</div>
-            <div class="metric-value" id="bzValue">–</div>
-            <div class="metric-sub" id="bzStatus">Loading...</div>
-          </div>
+        <div class="metric-card">
+          <div class="metric-icon bz-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="metric-info"><div class="metric-label">Bz (Solar Wind)</div><div class="metric-value" id="bzValue">–</div><div class="metric-sub" id="bzStatus">Loading...</div></div>
           <div class="metric-badge" id="bzBadge"></div>
         </div>
       </div>
-
-      <!-- Solar Activity Index Gauge -->
       <div class="gauge-section">
         <div class="gauge-card">
-          <div class="gauge-header">
-            <h2 class="gauge-title">Solar Activity Index</h2>
-            <div class="gauge-updated" id="gaugeUpdated">Updating...</div>
-          </div>
+          <div class="gauge-header"><h2 class="gauge-title">Solar Activity Index</h2><div class="gauge-updated" id="gaugeUpdated">Updating...</div></div>
           <div class="gauge-body">
             <div class="gauge-wrapper">
               <canvas id="gaugeCanvas" width="300" height="180"></canvas>
-              <div class="gauge-center-text">
-                <div class="gauge-value-text" id="gaugeValue">–</div>
-                <div class="gauge-label-text" id="gaugeLabel">Activity</div>
-              </div>
+              <div class="gauge-center-text"><div class="gauge-value-text" id="gaugeValue">–</div><div class="gauge-label-text" id="gaugeLabel">Activity</div></div>
             </div>
             <div class="gauge-legend">
               <div class="legend-item"><span class="legend-dot quiet-dot"></span>Quiet (0-2)</div>
@@ -154,82 +243,43 @@
             </div>
           </div>
         </div>
-
-        <!-- Alerts Panel -->
         <div class="alerts-card">
           <div class="alerts-header">
-            <h2 class="alerts-title">
-              <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              Active Alerts
-            </h2>
+            <h2 class="alerts-title">⚠️ Active Alerts</h2>
             <span class="alerts-count" id="alertCount">0</span>
           </div>
-          <div class="alerts-body" id="alertsBody">
-            <div class="loading-state">
-              <div class="spinner"></div>
-              <span>Fetching alerts...</span>
-            </div>
-          </div>
+          <div class="alerts-body" id="alertsBody"><div class="loading-state"><div class="spinner"></div><span>Fetching alerts...</span></div></div>
         </div>
       </div>
     </section>
 
-    <!-- ─── PREDICTION SECTION ─── -->
     <section class="section" id="prediction">
       <div class="section-header">
         <h2 class="section-title">ML <span class="gradient-text">Flare Prediction</span></h2>
         <p class="section-subtitle">Random Forest model trained on NASA DONKI historical data — predicting next 24-hour solar flare class</p>
       </div>
-
       <div class="prediction-layout">
-        <!-- Main Prediction Card -->
         <div class="prediction-main-card">
           <div class="prediction-shimmer"></div>
           <div class="prediction-content">
-            <div class="pred-header">
-              <div class="pred-title">Next 24-Hour Forecast</div>
-              <div class="pred-updated" id="predUpdated">–</div>
-            </div>
-
-            <div class="pred-result" id="predResult">
+            <div class="pred-header"><div class="pred-title">Next 24-Hour Forecast</div><div class="pred-updated" id="predUpdated">–</div></div>
+            <div class="pred-result">
               <div class="pred-class-badge" id="predClassBadge">–</div>
               <div class="pred-class-label">Predicted Class</div>
               <div class="pred-confidence" id="predConfidence">Confidence: –%</div>
             </div>
-
-            <div class="pred-probs" id="predProbs">
-              <div class="prob-bar-wrap">
-                <div class="prob-label">Quiet</div>
-                <div class="prob-track"><div class="prob-fill quiet-fill" id="prob-quiet" style="width:0%"></div></div>
-                <div class="prob-pct" id="pct-quiet">–%</div>
-              </div>
-              <div class="prob-bar-wrap">
-                <div class="prob-label">C-class</div>
-                <div class="prob-track"><div class="prob-fill c-fill" id="prob-c" style="width:0%"></div></div>
-                <div class="prob-pct" id="pct-c">–%</div>
-              </div>
-              <div class="prob-bar-wrap">
-                <div class="prob-label">M-class</div>
-                <div class="prob-track"><div class="prob-fill m-fill" id="prob-m" style="width:0%"></div></div>
-                <div class="prob-pct" id="pct-m">–%</div>
-              </div>
-              <div class="prob-bar-wrap">
-                <div class="prob-label">X-class</div>
-                <div class="prob-track"><div class="prob-fill x-fill" id="prob-x" style="width:0%"></div></div>
-                <div class="prob-pct" id="pct-x">–%</div>
-              </div>
+            <div class="pred-probs">
+              <div class="prob-bar-wrap"><div class="prob-label">Quiet</div><div class="prob-track"><div class="prob-fill quiet-fill" id="prob-quiet" style="width:0%"></div></div><div class="prob-pct" id="pct-quiet">–%</div></div>
+              <div class="prob-bar-wrap"><div class="prob-label">C-class</div><div class="prob-track"><div class="prob-fill c-fill" id="prob-c" style="width:0%"></div></div><div class="prob-pct" id="pct-c">–%</div></div>
+              <div class="prob-bar-wrap"><div class="prob-label">M-class</div><div class="prob-track"><div class="prob-fill m-fill" id="prob-m" style="width:0%"></div></div><div class="prob-pct" id="pct-m">–%</div></div>
+              <div class="prob-bar-wrap"><div class="prob-label">X-class</div><div class="prob-track"><div class="prob-fill x-fill" id="prob-x" style="width:0%"></div></div><div class="prob-pct" id="pct-x">–%</div></div>
             </div>
           </div>
         </div>
-
-        <!-- Feature Importances -->
         <div class="features-card">
           <h3 class="features-title">Model Feature Importances</h3>
-          <div class="features-list" id="featureList">
-            <div class="loading-state"><div class="spinner"></div><span>Running model...</span></div>
-          </div>
-
-          <div class="model-meta" id="modelMeta">
+          <div class="features-list" id="featureList"><div class="loading-state"><div class="spinner"></div><span>Running model...</span></div></div>
+          <div class="model-meta">
             <div class="meta-row"><span>Algorithm</span><span>Random Forest</span></div>
             <div class="meta-row"><span>Data Source</span><span>NASA DONKI + NOAA</span></div>
             <div class="meta-row" id="metaTrainedAt"><span>Last Trained</span><span>–</span></div>
@@ -240,14 +290,11 @@
       </div>
     </section>
 
-    <!-- ─── EVENTS SECTION ─── -->
     <section class="section" id="events">
       <div class="section-header">
         <h2 class="section-title">Recent <span class="gradient-text">Space Events</span></h2>
         <p class="section-subtitle">Solar flares and coronal mass ejections recorded in the last 30 days</p>
       </div>
-
-      <!-- Flare Chart -->
       <div class="chart-card">
         <div class="chart-header">
           <h3 class="chart-title">Solar Flare History (30 Days)</h3>
@@ -257,42 +304,25 @@
             <span class="chart-legend-item"><span class="cl-dot" style="background:#f44336"></span>X-class</span>
           </div>
         </div>
-        <div class="chart-body">
-          <canvas id="flareChart"></canvas>
-        </div>
+        <div class="chart-body"><canvas id="flareChart"></canvas></div>
       </div>
-
-      <!-- Events Feed -->
       <div class="events-grid">
         <div class="events-column">
-          <div class="events-column-header">
-            <h3>☀️ Solar Flares</h3>
-            <span class="tab-badge" id="flareTabCount">0</span>
-          </div>
-          <div class="events-list" id="flaresList">
-            <div class="loading-state"><div class="spinner"></div><span>Loading flares...</span></div>
-          </div>
+          <div class="events-column-header"><h3>☀️ Solar Flares</h3><span class="tab-badge" id="flareTabCount">0</span></div>
+          <div class="events-list" id="flaresList"><div class="loading-state"><div class="spinner"></div><span>Loading flares...</span></div></div>
         </div>
         <div class="events-column">
-          <div class="events-column-header">
-            <h3>💨 Coronal Mass Ejections</h3>
-            <span class="tab-badge" id="cmeTabCount">0</span>
-          </div>
-          <div class="events-list" id="cmeList">
-            <div class="loading-state"><div class="spinner"></div><span>Loading CMEs...</span></div>
-          </div>
+          <div class="events-column-header"><h3>💨 Coronal Mass Ejections</h3><span class="tab-badge" id="cmeTabCount">0</span></div>
+          <div class="events-list" id="cmeList"><div class="loading-state"><div class="spinner"></div><span>Loading CMEs...</span></div></div>
         </div>
       </div>
     </section>
 
-    <!-- ─── GEOMAGNETIC SECTION ─── -->
     <section class="section" id="geomagnetic">
       <div class="section-header">
         <h2 class="section-title">Geomagnetic <span class="gradient-text">Storm Tracker</span></h2>
         <p class="section-subtitle">Kp index trends and planetary geomagnetic disturbance monitoring</p>
       </div>
-
-      <!-- Kp Chart -->
       <div class="chart-card">
         <div class="chart-header">
           <h3 class="chart-title">Kp Index — Last 72 Hours</h3>
@@ -302,37 +332,62 @@
             <span style="color:#f44336">G3+ (6+): Severe</span>
           </div>
         </div>
-        <div class="chart-body">
-          <canvas id="kpChart"></canvas>
-        </div>
+        <div class="chart-body"><canvas id="kpChart"></canvas></div>
       </div>
-
-      <!-- Storm History -->
       <div class="storm-list-card">
         <h3 class="storm-title">Recent Geomagnetic Storms</h3>
-        <div class="storm-list" id="stormList">
-          <div class="loading-state"><div class="spinner"></div><span>Loading storms...</span></div>
-        </div>
+        <div class="storm-list" id="stormList"><div class="loading-state"><div class="spinner"></div><span>Loading storms...</span></div></div>
       </div>
     </section>
-
   </main>
 
-  <!-- ─── FOOTER ─── -->
   <footer class="footer">
     <div class="footer-inner">
-      <div class="footer-left">
-        <span class="footer-logo">☀️ SolarSentinel</span>
-        <span class="footer-desc">Powered by NASA DONKI API &amp; NOAA SWPC</span>
-      </div>
-      <div class="footer-right">
-        <span id="lastRefresh">Last refresh: –</span>
-        <span class="footer-sep">·</span>
-        <span>Auto-refresh: 60s</span>
-      </div>
+      <div class="footer-left"><span class="footer-logo">☀️ SolarSentinel</span><span class="footer-desc">Powered by NASA DONKI API &amp; NOAA SWPC</span></div>
+      <div class="footer-right"><span id="lastRefresh">Last refresh: –</span><span class="footer-sep">·</span><span>Auto-refresh: 60s</span></div>
     </div>
   </footer>
 
-  <script src="app.js"></script>
+  <script>
+const API_BASE = "https://solar-flare-api-1mvi.onrender.com";
+const REFRESH_INTERVAL_MS = 60000;
+let flareChartInstance = null, kpChartInstance = null;
+let lastAlertIds = new Set();
+
+function fmtDateTime(s){if(!s)return"–";try{const d=new Date(s.replace("Z","+00:00"));return d.toUTCString().replace("GMT","UTC").split(",")[1].trim().slice(0,17)}catch{return s.slice(0,16).replace("T"," ")+" UTC"}}
+function flareClassCSS(c){if(!c)return"cls-q";const x=c[0].toUpperCase();return x==="X"?"cls-x":x==="M"?"cls-m":x==="C"?"cls-c":x==="B"?"cls-b":"cls-q"}
+function kpColor(v){const n=parseFloat(v);return n>=7?"#ef4444":n>=5?"#ff9800":n>=3?"#ffd166":"#00d4aa"}
+function kpLabel(v){const n=parseFloat(v);return n>=8?{text:"SEVERE",bg:"rgba(239,68,68,.2)",color:"#f87171"}:n>=6?{text:"STRONG",bg:"rgba(239,68,68,.15)",color:"#fb923c"}:n>=5?{text:"MODERATE",bg:"rgba(255,152,0,.15)",color:"#fbbf24"}:n>=3?{text:"MINOR",bg:"rgba(255,209,102,.15)",color:"#fde68a"}:{text:"QUIET",bg:"rgba(0,212,170,.15)",color:"#00d4aa"}}
+function showToast(msg,type="info"){const c=document.getElementById("toastContainer"),t=document.createElement("div");t.className=`toast ${type==="alert"?"alert-toast":"success-toast"}`;t.textContent=msg;c.appendChild(t);setTimeout(()=>{t.style.animation="toastOut .4s ease forwards";setTimeout(()=>t.remove(),400)},4000)}
+async function fetchJSON(path){const r=await fetch(`${API_BASE}${path}`);if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()}
+
+function startClock(){const tick=()=>{const n=new Date(),p=x=>String(x).padStart(2,"0");document.getElementById("utcClock").textContent=`${p(n.getUTCHours())}:${p(n.getUTCMinutes())}:${p(n.getUTCSeconds())} UTC`};tick();setInterval(tick,1000)}
+
+function animateCounter(el,target,dec=0,dur=800){const s=parseFloat(el.textContent)||0,e=parseFloat(target)||0,t0=performance.now();const step=now=>{const p=Math.min((now-t0)/dur,1),ease=p<.5?2*p*p:-1+(4-2*p)*p;el.textContent=(s+(e-s)*ease).toFixed(dec);if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
+
+function drawGauge(canvas,value,max=9){const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);const cx=w/2,cy=h-20,r=Math.min(w*.42,h*.75),pct=Math.min(value/max,1),fillEnd=Math.PI+pct*Math.PI;ctx.beginPath();ctx.arc(cx,cy,r,Math.PI,2*Math.PI);ctx.strokeStyle="rgba(255,255,255,.07)";ctx.lineWidth=18;ctx.lineCap="round";ctx.stroke();const g=ctx.createLinearGradient(cx-r,cy,cx+r,cy);g.addColorStop(0,"#00d4aa");g.addColorStop(.4,"#ffd166");g.addColorStop(.7,"#ff6b35");g.addColorStop(1,"#ef4444");ctx.beginPath();ctx.arc(cx,cy,r,Math.PI,fillEnd);ctx.strokeStyle=g;ctx.lineWidth=18;ctx.lineCap="round";ctx.stroke();ctx.shadowColor=kpColor(value);ctx.shadowBlur=15;ctx.beginPath();ctx.arc(cx,cy,r,Math.max(fillEnd-.05,Math.PI),fillEnd);ctx.strokeStyle="white";ctx.lineWidth=4;ctx.stroke();ctx.shadowBlur=0;for(let i=0;i<=9;i++){const a=Math.PI+(i/9)*Math.PI,x1=cx+(r-14)*Math.cos(a),y1=cy+(r-14)*Math.sin(a),x2=cx+(r+4)*Math.cos(a),y2=cy+(r+4)*Math.sin(a);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle="rgba(255,255,255,.2)";ctx.lineWidth=1.5;ctx.stroke()}}
+
+function buildFlareChart(flares){if(flareChartInstance)flareChartInstance.destroy();const b={};flares.forEach(f=>{const d=(f.begin_time||"").slice(0,10);if(!d)return;if(!b[d])b[d]={C:0,M:0,X:0};const c=(f.class_type||"C")[0].toUpperCase();if(b[d][c]!==undefined)b[d][c]++});const labels=Object.keys(b).sort();flareChartInstance=new Chart(document.getElementById("flareChart").getContext("2d"),{type:"bar",data:{labels:labels.map(l=>l.slice(5)),datasets:[{label:"C-class",data:labels.map(d=>b[d].C),backgroundColor:"rgba(0,212,170,.7)",borderRadius:4},{label:"M-class",data:labels.map(d=>b[d].M),backgroundColor:"rgba(255,152,0,.8)",borderRadius:4},{label:"X-class",data:labels.map(d=>b[d].X),backgroundColor:"rgba(239,68,68,.9)",borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(8,12,26,.95)",titleColor:"rgba(255,255,255,.7)",bodyColor:"white",borderColor:"rgba(255,255,255,.1)",borderWidth:1}},scales:{x:{stacked:true,grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"rgba(255,255,255,.4)",font:{size:11}}},y:{stacked:true,beginAtZero:true,grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"rgba(255,255,255,.4)",font:{size:11},stepSize:1}}}}})}
+
+function buildKpChart(kpData){if(kpChartInstance)kpChartInstance.destroy();const data=kpData.slice(-48),labels=data.map(k=>(k.time_tag||"").slice(11,16)),values=data.map(k=>parseFloat(String(k.kp||k.Kp||0).replace(/[+-]/g,""))||0);kpChartInstance=new Chart(document.getElementById("kpChart").getContext("2d"),{type:"bar",data:{labels,datasets:[{label:"Kp Index",data:values,backgroundColor:values.map(v=>kpColor(v)),borderRadius:3,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(8,12,26,.95)",titleColor:"rgba(255,255,255,.7)",bodyColor:"white",borderColor:"rgba(255,255,255,.1)",borderWidth:1,callbacks:{label:c=>`Kp: ${c.raw}`}}},scales:{x:{grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"rgba(255,255,255,.35)",font:{size:10},maxTicksLimit:12}},y:{min:0,max:9,grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"rgba(255,255,255,.4)",font:{size:11},stepSize:1}}}}})}
+
+function renderMetrics(kpData,flares,cmes,wind){const raw=kpData.length>0?kpData[kpData.length-1]:null,latestKp=raw?parseFloat(String(raw.kp||raw.Kp||0).replace(/[+-]/g,"")):null;if(latestKp!==null){animateCounter(document.getElementById("kpValue"),latestKp,1);const lbl=kpLabel(latestKp),badge=document.getElementById("kpBadge");badge.textContent=lbl.text;badge.style.background=lbl.bg;badge.style.color=lbl.color;document.getElementById("kpStatus").textContent=`Geomagnetic ${lbl.text.toLowerCase()} conditions`;drawGauge(document.getElementById("gaugeCanvas"),latestKp,9);document.getElementById("gaugeValue").textContent=latestKp.toFixed(1);document.getElementById("gaugeLabel").textContent=lbl.text;document.getElementById("gaugeUpdated").textContent=`Updated ${new Date().toUTCString().slice(17,25)} UTC`}
+const f7=flares.filter(f=>(Date.now()-new Date(f.begin_time||0).getTime())<7*86400000);document.getElementById("flareCount").textContent=f7.length;const lf=flares[0];document.getElementById("flareLatest").textContent=lf?`Latest: ${lf.class_type} — ${fmtDateTime(lf.begin_time)}`:"No recent flares";const fl=f7.some(f=>(f.class_type||"").startsWith("X"))?{text:"X-class",bg:"rgba(239,68,68,.2)",color:"#f87171"}:f7.some(f=>(f.class_type||"").startsWith("M"))?{text:"M-class",bg:"rgba(255,152,0,.15)",color:"#fbbf24"}:{text:"C-class",bg:"rgba(0,212,170,.12)",color:"#00d4aa"};const fb=document.getElementById("flareBadge");fb.textContent=fl.text;fb.style.background=fl.bg;fb.style.color=fl.color;
+const c7=cmes.filter(c=>(Date.now()-new Date(c.start_time||0).getTime())<7*86400000);document.getElementById("cmeCount").textContent=c7.length;const lc=cmes[0];document.getElementById("cmeLatestSpeed").textContent=lc?.speed_kms?`Latest: ${lc.speed_kms} km/s — ${lc.type}`:lc?`Latest: ${fmtDateTime(lc.start_time)}`:"No recent CMEs";const cb=document.getElementById("cmeBadge");cb.textContent=c7.length>3?"Active":"Nominal";cb.style.background=c7.length>3?"rgba(255,107,53,.2)":"rgba(0,212,170,.12)";cb.style.color=c7.length>3?"#ff6b35":"#00d4aa";
+const bz=parseFloat(wind.bz_gsm||wind.Bz||0);document.getElementById("bzValue").textContent=`${bz>=0?"+":""}${bz.toFixed(1)} nT`;const be=document.getElementById("bzStatus"),bb=document.getElementById("bzBadge");if(bz<-10){be.textContent="Strongly southward — storm risk HIGH";bb.textContent="High Risk";bb.style.background="rgba(239,68,68,.2)";bb.style.color="#f87171"}else if(bz<-5){be.textContent="Southward — moderate storm risk";bb.textContent="Moderate";bb.style.background="rgba(255,152,0,.15)";bb.style.color="#fbbf24"}else if(bz>0){be.textContent="Northward — low storm risk";bb.textContent="Low Risk";bb.style.background="rgba(0,212,170,.12)";bb.style.color="#00d4aa"}else{be.textContent="Near neutral";bb.textContent="Nominal";bb.style.background="rgba(255,255,255,.06)";bb.style.color="rgba(255,255,255,.5)"}}
+
+function renderPrediction(pred){if(!pred)return;const cls=pred.predicted_class||"–",badge=document.getElementById("predClassBadge");badge.textContent=cls;const map={"Quiet":{bg:"rgba(0,212,170,.15)",color:"#00d4aa",border:"rgba(0,212,170,.3)"},"C-class":{bg:"rgba(6,182,212,.15)",color:"#06b6d4",border:"rgba(6,182,212,.3)"},"M-class":{bg:"rgba(255,152,0,.15)",color:"#fb923c",border:"rgba(255,152,0,.35)"},"X-class":{bg:"rgba(239,68,68,.15)",color:"#f87171",border:"rgba(239,68,68,.4)"}};const s=map[cls]||map["C-class"];badge.style.background=s.bg;badge.style.color=s.color;badge.style.boxShadow=`0 0 30px ${s.border}`;document.getElementById("predConfidence").textContent=`Confidence: ${pred.confidence?.toFixed(1)||"–"}%`;document.getElementById("predUpdated").textContent=pred.generated_at?fmtDateTime(pred.generated_at):"–";const probs=pred.probabilities||{},set=(id,pid,v)=>{const b=document.getElementById(id),p=document.getElementById(pid);setTimeout(()=>{b.style.width=`${v||0}%`},100);if(p)p.textContent=`${(v||0).toFixed(1)}%`};set("prob-quiet","pct-quiet",probs.quiet);set("prob-c","pct-c",probs.c_class);set("prob-m","pct-m",probs.m_class);set("prob-x","pct-x",probs.x_class);const feats=pred.feature_importances||{},fl=document.getElementById("featureList"),sorted=Object.entries(feats).sort((a,b)=>b[1]-a[1]).slice(0,8);fl.innerHTML=sorted.map(([n,p])=>`<div class="feature-bar-wrap"><div class="feature-name">${n.replace(/_/g," ")}</div><div class="feature-track"><div class="feature-fill" style="width:${Math.min(p*3,100)}%"></div></div></div>`).join("")||"<div style='color:rgba(255,255,255,.3);font-size:.8rem'>No data</div>";const inp=pred.input_summary||{},te=document.getElementById("metaTrainedAt"),fe=document.getElementById("metaInputFlares"),ke=document.getElementById("metaInputKp");if(te)te.querySelector("span:last-child").textContent=pred.model_trained_at?fmtDateTime(pred.model_trained_at):"–";if(fe)fe.querySelector("span:last-child").textContent=inp.recent_flares_7d??"–";if(ke)ke.querySelector("span:last-child").textContent=inp.avg_kp!=null?parseFloat(inp.avg_kp).toFixed(2):"–"}
+
+function renderFlares(flares){const list=document.getElementById("flaresList");document.getElementById("flareTabCount").textContent=flares.length;if(!flares.length){list.innerHTML=`<div class="no-alerts">No recent flares recorded</div>`;return}list.innerHTML=flares.slice(0,20).map(f=>`<div class="event-item"><div class="event-class ${flareClassCSS(f.class_type)}">${f.class_type||"–"}</div><div class="event-info"><div class="event-time">${fmtDateTime(f.begin_time)}</div><div class="event-loc">${f.source_location||"Unknown location"}${f.active_region?` · AR${f.active_region}`:""}</div></div></div>`).join("")}
+function renderCMEs(cmes){const list=document.getElementById("cmeList");document.getElementById("cmeTabCount").textContent=cmes.length;if(!cmes.length){list.innerHTML=`<div class="no-alerts">No recent CMEs recorded</div>`;return}list.innerHTML=cmes.slice(0,15).map(c=>`<div class="event-item"><div class="event-class cls-b">${c.type||"CME"}</div><div class="event-info"><div class="event-time">${fmtDateTime(c.start_time)}</div><div class="event-loc">${c.speed_kms?`${c.speed_kms} km/s`:"Speed N/A"}${c.half_angle?` · ${c.half_angle}° half-angle`:""}</div>${c.note?`<div class="event-note">${c.note}</div>`:""}</div></div>`).join("")}
+function renderAlerts(alerts){const body=document.getElementById("alertsBody"),cnt=document.getElementById("alertCount");cnt.textContent=alerts.length;if(!alerts.length){body.innerHTML=`<div class="no-alerts">✅ No active space weather alerts</div>`;return}alerts.forEach(a=>{const id=a.serial_number||a.issue_datetime;if(id&&!lastAlertIds.has(id)){lastAlertIds.add(id);const m=(a.message||"").slice(0,80);if(m)showToast(`🚨 New Alert: ${m}...`,"alert")}});body.innerHTML=alerts.slice(0,6).map(a=>{const m=a.message||"",w=m.includes("WARNING")||m.includes("WATCH");return`<div class="alert-item ${w?"warning":""}"><div class="alert-time">${a.issue_datetime?fmtDateTime(a.issue_datetime):"–"}</div><div class="alert-msg">${m.slice(0,120)}${m.length>120?"…":""}</div></div>`}).join("")}
+function renderStorms(geo){const list=document.getElementById("stormList"),storms=geo.storms||[];if(!storms.length){list.innerHTML=`<div class="no-alerts">🟢 No recent geomagnetic storms</div>`;return}list.innerHTML=storms.slice(0,5).map(s=>{const kl=s.all_kp_index||[],mk=kl.length?Math.max(...kl.map(k=>parseFloat(k.kpIndex||0))):0,g=mk>=8?"G4-G5":mk>=6?"G3":mk>=5?"G2":"G1",sv=mk>=7?"🔴":mk>=5?"🟠":"🟡";return`<div class="storm-item"><div class="storm-severity">${sv}</div><div class="storm-details"><div class="storm-time">${fmtDateTime(s.start_time)}</div><div class="storm-desc">Class ${g} — Peak Kp: ${mk.toFixed(1)}</div></div></div>`}).join("")}
+
+async function fetchAll(){try{const[flares,cmes,geo,pred,wind,alerts]=await Promise.allSettled([fetchJSON("/api/flares?days=30"),fetchJSON("/api/cme?days=30"),fetchJSON("/api/geomagnetic"),fetchJSON("/api/predict"),fetchJSON("/api/solar-wind"),fetchJSON("/api/alerts")]);const fd=flares.status==="fulfilled"?flares.value:[],cd=cmes.status==="fulfilled"?cmes.value:[],gd=geo.status==="fulfilled"?geo.value:{storms:[],kp_index_72h:[]},pd=pred.status==="fulfilled"?pred.value:null,wd=wind.status==="fulfilled"?wind.value:{},ad=alerts.status==="fulfilled"?alerts.value:[],kp=gd.kp_index_72h||[];renderMetrics(kp,fd,cd,wd);renderPrediction(pd);renderFlares(fd);renderCMEs(cd);renderAlerts(ad);renderStorms(gd);buildFlareChart(fd);buildKpChart(kp);document.getElementById("lastRefresh").textContent=`Last refresh: ${new Date().toUTCString().slice(17,25)} UTC`}catch(e){console.error(e);showToast("⚠️ Backend waking up — please wait 30 seconds and refresh","alert")}}
+
+function initNavHighlight(){const sections=["overview","prediction","events","geomagnetic"],obs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)sections.forEach(id=>{const l=document.getElementById(`nav-${id}`);if(l)l.classList.toggle("active",e.target.id===id)})}),{threshold:.4});sections.forEach(id=>{const el=document.getElementById(id);if(el)obs.observe(el)})}
+
+document.addEventListener("DOMContentLoaded",()=>{startClock();initNavHighlight();fetchAll();setInterval(fetchAll,REFRESH_INTERVAL_MS);showToast("🚀 SolarSentinel connected — loading live space weather data...","success")});
+  </script>
 </body>
 </html>
