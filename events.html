@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Solar Events — SolarSentinel</title>
+  <meta name="description" content="Solar flare and CME event archive — 30-day history of solar events with class, location and timing data from NASA DONKI."/>
+  <link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+<div class="space-bg"><div class="stars"></div><div class="stars stars2"></div><div class="nebula"></div></div>
+<div class="toast-container" id="toasts"></div>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-top-alert"><span class="header-top-dot"></span>SOLAR EVENT ARCHIVE — NASA DONKI DATABASE — LAST 30 DAYS</div>
+    <span id="clock" class="utc-time">--:--:-- UTC</span>
+  </div>
+  <div class="header-main">
+    <a href="/index.html" class="logo-wrap">
+      <svg class="logo-emblem" viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="11" fill="url(#sg4)"/><path d="M22 3v6M22 35v6M3 22h6M35 22h6M7.5 7.5l4.2 4.2M32.3 32.3l4.2 4.2M7.5 36.5l4.2-4.2M32.3 11.7l4.2-4.2" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/><defs><radialGradient id="sg4" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff9c4"/><stop offset="55%" stop-color="#ff9800"/><stop offset="100%" stop-color="#e64a00"/></radialGradient></defs></svg>
+      <div class="logo-text-block"><span class="logo-title">SolarSentinel</span><span class="logo-agency">Space Weather Intelligence Agency</span></div>
+    </a>
+    <nav class="main-nav">
+      <a href="/index.html"       class="nav-item"><span class="nav-icon">🏠</span>Home</a>
+      <a href="/dashboard.html"   class="nav-item"><span class="nav-icon">📡</span>Dashboard</a>
+      <a href="/prediction.html"  class="nav-item"><span class="nav-icon">🤖</span>ML Prediction</a>
+      <a href="/events.html"      class="nav-item active"><span class="nav-icon">⚡</span>Events</a>
+      <a href="/alerts.html"      class="nav-item"><span class="nav-icon">🚨</span>Alerts</a>
+    </nav>
+    <div class="header-actions"><div class="live-badge"><span class="live-dot"></span>LIVE DATA</div></div>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="page-hero-tag">⚡ Event Archive</div>
+  <h1>Solar <span>Event Catalog</span></h1>
+  <p>Complete archive of solar flares and coronal mass ejections from the last 30 days, sourced from NASA DONKI real-time database</p>
+</div>
+
+<div class="page-wrap">
+  <div class="container" style="padding-top:2.5rem;padding-bottom:3rem;">
+
+    <!-- SUMMARY STATS -->
+    <div class="metrics-grid" style="margin-bottom:2rem;">
+      <div class="metric-card mc-orange"><div class="metric-card-label">Total Flares (30d)</div><div class="metric-card-value" id="totalFlares">–</div><div class="metric-card-sub" id="flareBreakdown">–</div><div class="metric-card-icon">☀️</div></div>
+      <div class="metric-card mc-purple"><div class="metric-card-label">Total CMEs (30d)</div><div class="metric-card-value" id="totalCmes">–</div><div class="metric-card-sub" id="cmeAvgSpeed">–</div><div class="metric-card-icon">💨</div></div>
+      <div class="metric-card mc-red" style="border-color:rgba(239,68,68,.2);background:linear-gradient(135deg,rgba(239,68,68,.06),var(--card));"><div class="metric-card-label">X-Class Flares</div><div class="metric-card-value" id="xFlares">–</div><div class="metric-card-sub">Most energetic events</div><div class="metric-card-icon">⚡</div></div>
+      <div class="metric-card mc-cyan"><div class="metric-card-label">Peak Flare</div><div class="metric-card-value" id="peakFlare" style="font-size:1.4rem;">–</div><div class="metric-card-sub" id="peakFlareDate">–</div><div class="metric-card-icon">📈</div></div>
+    </div>
+
+    <div class="grid-2" style="align-items:start;">
+
+      <!-- FLARES -->
+      <div>
+        <div class="section-title-line" style="margin-bottom:1rem;"><h2>☀️ Solar Flares</h2></div>
+        <!-- FILTER -->
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;" id="flareFilters">
+          <button onclick="filterFlares('all')"   id="ff-all"   class="filter-btn active">All</button>
+          <button onclick="filterFlares('X')"     id="ff-X"     class="filter-btn">X-Class</button>
+          <button onclick="filterFlares('M')"     id="ff-M"     class="filter-btn">M-Class</button>
+          <button onclick="filterFlares('C')"     id="ff-C"     class="filter-btn">C-Class</button>
+        </div>
+        <div class="chart-card" style="padding:0;overflow:hidden;">
+          <div class="event-list" id="flareList" style="max-height:600px;overflow-y:auto;">
+            <div class="loading-spin"><div class="spin"></div>Loading solar flares...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CMEs -->
+      <div>
+        <div class="section-title-line" style="margin-bottom:1rem;"><h2>💨 Coronal Mass Ejections</h2></div>
+        <div style="margin-bottom:1rem;height:36px;"></div>
+        <div class="chart-card" style="padding:0;overflow:hidden;">
+          <div class="event-list" id="cmeList" style="max-height:600px;overflow-y:auto;">
+            <div class="loading-spin"><div class="spin"></div>Loading CMEs...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-links"><a href="/index.html">Home</a><a href="/dashboard.html">Dashboard</a><a href="/prediction.html">Prediction</a><a href="/events.html">Events</a><a href="/alerts.html">Alerts</a></div>
+    <div class="footer-status"><span class="live-dot"></span>NASA DONKI Connected</div>
+    <div class="footer-copy">© 2026 SolarSentinel · NASA DONKI & NOAA SWPC</div>
+  </div>
+</footer>
+
+<style>
+.filter-btn{padding:.35rem .85rem;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:var(--font-m);}
+.filter-btn.active,.filter-btn:hover{background:rgba(255,107,53,.12);border-color:rgba(255,107,53,.3);color:var(--orange);}
+</style>
+
+<script src="/common.js"></script>
+<script>
+let allFlares = [];
+
+function filterFlares(cls) {
+  document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("ff-"+cls).classList.add("active");
+  const filtered = cls==="all" ? allFlares : allFlares.filter(f=>(f.class_type||"").startsWith(cls));
+  renderFlareList(filtered);
+}
+
+function renderFlareList(flares) {
+  const el = document.getElementById("flareList");
+  if (!flares.length) { el.innerHTML=`<div class="empty-state">No ${''} flares found</div>`; return; }
+  el.innerHTML = flares.slice(0,50).map(f=>`
+    <div class="event-row">
+      <div class="event-class-badge ${flareCSS(f.class_type)}">${f.class_type||"–"}</div>
+      <div>
+        <div class="event-loc">${f.source_location||"Unknown location"} ${f.active_region?`· AR${f.active_region}`:""}</div>
+        <div class="event-time">${fmtDT(f.begin_time)} — ${fmtDT(f.peak_time)}</div>
+        ${f.linked_events?.length?`<div class="event-note">Linked: ${f.linked_events.length} event(s)</div>`:""}
+      </div>
+    </div>`).join("");
+}
+
+async function load() {
+  try {
+    const [fl, cm] = await Promise.allSettled([get("/api/flares?days=30"), get("/api/cme?days=30")]);
+    allFlares = fl.value || [];
+    const cmes = cm.value || [];
+
+    // Stats
+    document.getElementById("totalFlares").textContent = allFlares.length;
+    const x=allFlares.filter(f=>(f.class_type||"").startsWith("X")).length;
+    const m=allFlares.filter(f=>(f.class_type||"").startsWith("M")).length;
+    const c=allFlares.filter(f=>(f.class_type||"").startsWith("C")).length;
+    document.getElementById("flareBreakdown").textContent = `X:${x}  M:${m}  C:${c}`;
+    document.getElementById("xFlares").textContent = x;
+    document.getElementById("totalCmes").textContent = cmes.length;
+    const speeds = cmes.filter(c=>c.speed_kms).map(c=>parseFloat(c.speed_kms));
+    document.getElementById("cmeAvgSpeed").textContent = speeds.length ? `Avg speed: ${Math.round(speeds.reduce((a,b)=>a+b,0)/speeds.length)} km/s` : "No speed data";
+
+    const sorted = [...allFlares].sort((a,b)=>{
+      const rank = x=>{if(!x)return 0;const c=x[0],n=parseFloat(x.slice(1))||0;return(c==="X"?300:c==="M"?200:c==="C"?100:50)+n;};
+      return rank(b.class_type)-rank(a.class_type);
+    });
+    if (sorted[0]) {
+      document.getElementById("peakFlare").textContent = sorted[0].class_type;
+      document.getElementById("peakFlareDate").textContent = fmtDT(sorted[0].begin_time);
+    }
+
+    renderFlareList(allFlares);
+
+    const cmeEl = document.getElementById("cmeList");
+    if (!cmes.length) { cmeEl.innerHTML=`<div class="empty-state">No CMEs recorded in last 30 days</div>`; }
+    else cmeEl.innerHTML = cmes.slice(0,40).map(c=>`
+      <div class="event-row">
+        <div class="event-class-badge cls-b">${c.type||"CME"}</div>
+        <div>
+          <div class="event-loc">${c.speed_kms?`${c.speed_kms} km/s`:"Speed N/A"} ${c.half_angle?`· ${c.half_angle}° cone angle`:""}</div>
+          <div class="event-time">${fmtDT(c.start_time)}</div>
+          ${c.note?`<div class="event-note">${c.note.slice(0,80)}${c.note.length>80?"…":""}</div>`:""}
+        </div>
+      </div>`).join("");
+
+  } catch(e) { toast("⚠️ Backend waking up — please wait 30s","warn"); }
+}
+
+load();
+</script>
+</body>
+</html>

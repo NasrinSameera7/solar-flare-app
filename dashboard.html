@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Live Dashboard — SolarSentinel</title>
+  <meta name="description" content="Real-time space weather dashboard — Kp index, solar flares, CMEs, geomagnetic storms and solar wind data."/>
+  <link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+<div class="space-bg"><div class="stars"></div><div class="stars stars2"></div><div class="nebula"></div></div>
+<div class="toast-container" id="toasts"></div>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-top-alert"><span class="header-top-dot"></span>LIVE MONITORING — DATA REFRESHES EVERY 60 SECONDS</div>
+    <span id="clock" class="utc-time">--:--:-- UTC</span>
+  </div>
+  <div class="header-main">
+    <a href="/index.html" class="logo-wrap">
+      <svg class="logo-emblem" viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="11" fill="url(#sg2)"/><path d="M22 3v6M22 35v6M3 22h6M35 22h6M7.5 7.5l4.2 4.2M32.3 32.3l4.2 4.2M7.5 36.5l4.2-4.2M32.3 11.7l4.2-4.2" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/><defs><radialGradient id="sg2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff9c4"/><stop offset="55%" stop-color="#ff9800"/><stop offset="100%" stop-color="#e64a00"/></radialGradient></defs></svg>
+      <div class="logo-text-block"><span class="logo-title">SolarSentinel</span><span class="logo-agency">Space Weather Intelligence Agency</span></div>
+    </a>
+    <nav class="main-nav">
+      <a href="/index.html"       class="nav-item"><span class="nav-icon">🏠</span>Home</a>
+      <a href="/dashboard.html"   class="nav-item active"><span class="nav-icon">📡</span>Dashboard</a>
+      <a href="/prediction.html"  class="nav-item"><span class="nav-icon">🤖</span>ML Prediction</a>
+      <a href="/events.html"      class="nav-item"><span class="nav-icon">⚡</span>Events</a>
+      <a href="/alerts.html"      class="nav-item"><span class="nav-icon">🚨</span>Alerts</a>
+    </nav>
+    <div class="header-actions">
+      <div class="live-badge"><span class="live-dot"></span>LIVE DATA</div>
+    </div>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="page-hero-tag">📡 Mission Control</div>
+  <h1>Live Space Weather <span>Dashboard</span></h1>
+  <p>Real-time monitoring of solar activity, geomagnetic conditions and space weather indices</p>
+</div>
+
+<div class="page-wrap">
+  <div class="container" style="padding-top:2.5rem;padding-bottom:3rem;">
+
+    <!-- METRIC CARDS -->
+    <div class="metrics-grid" style="margin-bottom:2rem;">
+      <div class="metric-card mc-cyan">
+        <div class="metric-card-label">Kp Index (Now)</div>
+        <div class="metric-card-value" id="kpVal">–</div>
+        <div class="metric-card-sub" id="kpSub">Loading...</div>
+        <div class="metric-card-badge" id="kpBadge"></div>
+        <div class="metric-card-icon">🌐</div>
+      </div>
+      <div class="metric-card mc-orange">
+        <div class="metric-card-label">Flares (7 days)</div>
+        <div class="metric-card-value" id="flareVal">–</div>
+        <div class="metric-card-sub" id="flareSub">Loading...</div>
+        <div class="metric-card-badge" id="flareBadge"></div>
+        <div class="metric-card-icon">☀️</div>
+      </div>
+      <div class="metric-card mc-purple">
+        <div class="metric-card-label">CMEs (7 days)</div>
+        <div class="metric-card-value" id="cmeVal">–</div>
+        <div class="metric-card-sub" id="cmeSub">Loading...</div>
+        <div class="metric-card-badge" id="cmeBadge"></div>
+        <div class="metric-card-icon">💨</div>
+      </div>
+      <div class="metric-card mc-green">
+        <div class="metric-card-label">Solar Wind Bz</div>
+        <div class="metric-card-value" id="bzVal">–</div>
+        <div class="metric-card-sub" id="bzSub">Loading...</div>
+        <div class="metric-card-badge" id="bzBadge"></div>
+        <div class="metric-card-icon">🧲</div>
+      </div>
+    </div>
+
+    <!-- GAUGE + ALERTS -->
+    <div class="grid-2" style="margin-bottom:2rem;">
+      <div class="chart-card">
+        <div class="chart-header"><h3 class="chart-title">⚡ Solar Activity Gauge (Kp)</h3><span id="gaugeUpdated" style="font-size:.72rem;color:rgba(255,255,255,.35);">Updating...</span></div>
+        <div style="display:flex;align-items:center;gap:2rem;flex-wrap:wrap;">
+          <div class="gauge-wrap">
+            <canvas id="gaugeCanvas" width="280" height="165"></canvas>
+            <div class="gauge-center"><div class="gauge-val" id="gaugeVal">–</div><div class="gauge-lbl" id="gaugeLbl">Activity</div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.6rem;">
+            <div style="display:flex;align-items:center;gap:.6rem;font-size:.8rem;color:rgba(255,255,255,.6);"><span style="width:10px;height:10px;border-radius:50%;background:#00d4aa;display:inline-block;"></span>Quiet (0–2)</div>
+            <div style="display:flex;align-items:center;gap:.6rem;font-size:.8rem;color:rgba(255,255,255,.6);"><span style="width:10px;height:10px;border-radius:50%;background:#ffd166;display:inline-block;"></span>Minor (3–4)</div>
+            <div style="display:flex;align-items:center;gap:.6rem;font-size:.8rem;color:rgba(255,255,255,.6);"><span style="width:10px;height:10px;border-radius:50%;background:#ff6b35;display:inline-block;"></span>Moderate (5–6)</div>
+            <div style="display:flex;align-items:center;gap:.6rem;font-size:.8rem;color:rgba(255,255,255,.6);"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;"></span>Severe (7+)</div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">🚨 Active NOAA Alerts</h3>
+          <span class="tag tag-red" id="alertCount">0</span>
+        </div>
+        <div id="alertsBox" style="display:flex;flex-direction:column;gap:.6rem;max-height:240px;overflow-y:auto;">
+          <div class="loading-spin"><div class="spin"></div>Fetching alerts...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="chart-card" style="margin-bottom:1.5rem;" id="geomagnetic">
+      <div class="chart-header">
+        <h3 class="chart-title">📈 Kp Index — Last 72 Hours</h3>
+        <div class="chart-legend">
+          <span class="cleg"><span class="cleg-dot" style="background:#00d4aa;"></span>Quiet</span>
+          <span class="cleg"><span class="cleg-dot" style="background:#ffd166;"></span>Minor Storm</span>
+          <span class="cleg"><span class="cleg-dot" style="background:#ef4444;"></span>Severe Storm</span>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="kpChart"></canvas></div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:1.5rem;">
+      <div class="chart-header">
+        <h3 class="chart-title">☀️ Solar Flare History — Last 30 Days</h3>
+        <div class="chart-legend">
+          <span class="cleg"><span class="cleg-dot" style="background:#00d4aa;"></span>C-class</span>
+          <span class="cleg"><span class="cleg-dot" style="background:#ff9800;"></span>M-class</span>
+          <span class="cleg"><span class="cleg-dot" style="background:#f44336;"></span>X-class</span>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="flareChart"></canvas></div>
+    </div>
+
+    <!-- RECENT STORMS -->
+    <div class="chart-card">
+      <div class="chart-header"><h3 class="chart-title">🌍 Recent Geomagnetic Storms</h3></div>
+      <div id="stormList"><div class="loading-spin"><div class="spin"></div>Loading...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-links">
+      <a href="/index.html">Home</a><a href="/dashboard.html">Dashboard</a>
+      <a href="/prediction.html">Prediction</a><a href="/events.html">Events</a><a href="/alerts.html">Alerts</a>
+    </div>
+    <div class="footer-status"><span class="live-dot"></span><span id="lastRefresh">Last refresh: –</span></div>
+    <div class="footer-copy">© 2026 SolarSentinel · NASA DONKI & NOAA SWPC</div>
+  </div>
+</footer>
+
+<script src="/common.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+let flareChart, kpChart;
+
+function renderMetrics(kpData, flares, cmes, wind) {
+  const raw = kpData[kpData.length-1];
+  const kp = parseFloat(String(raw?.kp||raw?.Kp||0).replace(/[+-]/g,""));
+  const lbl = kpLabel(kp);
+  countUp(document.getElementById("kpVal"), kp, 1);
+  document.getElementById("kpSub").textContent = `Geomagnetic ${lbl.text.toLowerCase()} conditions`;
+  const kb = document.getElementById("kpBadge"); kb.textContent=lbl.text; kb.style.background=lbl.bg; kb.style.color=lbl.color;
+  drawGauge(document.getElementById("gaugeCanvas"), kp);
+  document.getElementById("gaugeVal").textContent = kp.toFixed(1);
+  document.getElementById("gaugeLbl").textContent = lbl.text;
+  document.getElementById("gaugeUpdated").textContent = "Updated " + new Date().toUTCString().slice(17,25) + " UTC";
+
+  const f7 = flares.filter(f=>(Date.now()-new Date(f.begin_time||0))< 7*864e5);
+  document.getElementById("flareVal").textContent = f7.length;
+  const lf = flares[0];
+  document.getElementById("flareSub").textContent = lf ? `Latest: ${lf.class_type} — ${fmtDT(lf.begin_time)}` : "No recent flares";
+  const fl = f7.some(f=>(f.class_type||"").startsWith("X")) ? {text:"X-class",bg:"rgba(239,68,68,.2)",color:"#f87171"}
+           : f7.some(f=>(f.class_type||"").startsWith("M")) ? {text:"M-class",bg:"rgba(255,152,0,.15)",color:"#fbbf24"}
+           : {text:"C-class",bg:"rgba(0,212,170,.12)",color:"#00d4aa"};
+  const fb=document.getElementById("flareBadge"); fb.textContent=fl.text; fb.style.background=fl.bg; fb.style.color=fl.color;
+
+  const c7 = cmes.filter(c=>(Date.now()-new Date(c.start_time||0))<7*864e5);
+  document.getElementById("cmeVal").textContent = c7.length;
+  document.getElementById("cmeSub").textContent = cmes[0]?.speed_kms ? `Latest: ${cmes[0].speed_kms} km/s` : "No recent CMEs";
+  const cb=document.getElementById("cmeBadge"); cb.textContent=c7.length>3?"Active":"Nominal"; cb.style.background=c7.length>3?"rgba(255,107,53,.2)":"rgba(0,212,170,.12)"; cb.style.color=c7.length>3?"#ff6b35":"#00d4aa";
+
+  const bz = parseFloat(wind.bz_gsm||wind.Bz||0);
+  document.getElementById("bzVal").textContent = `${bz>=0?"+":""}${bz.toFixed(1)} nT`;
+  const bzs = bz<-10?"Strongly southward — HIGH storm risk":bz<-5?"Southward — moderate storm risk":bz>0?"Northward — low storm risk":"Near neutral";
+  document.getElementById("bzSub").textContent = bzs;
+  const bb=document.getElementById("bzBadge");
+  if(bz<-10){bb.textContent="High Risk";bb.style.background="rgba(239,68,68,.2)";bb.style.color="#f87171";}
+  else if(bz<-5){bb.textContent="Moderate";bb.style.background="rgba(255,152,0,.15)";bb.style.color="#fbbf24";}
+  else{bb.textContent="Low Risk";bb.style.background="rgba(0,212,170,.12)";bb.style.color="#00d4aa";}
+}
+
+function renderAlerts(alerts) {
+  document.getElementById("alertCount").textContent = alerts.length;
+  const box = document.getElementById("alertsBox");
+  if (!alerts.length) { box.innerHTML=`<div class="empty-state">✅ No active space weather alerts</div>`; return; }
+  box.innerHTML = alerts.slice(0,5).map(a=>{
+    const m=a.message||"", cls=m.includes("WARNING")||m.includes("WATCH")?"alert-warn":"alert-info";
+    return `<div class="alert-row ${cls}"><div class="alert-row-time">${a.issue_datetime?fmtDT(a.issue_datetime):"–"}</div><div class="alert-row-msg">${m.slice(0,120)}${m.length>120?"…":""}</div></div>`;
+  }).join("");
+}
+
+function renderStorms(geo) {
+  const el=document.getElementById("stormList"), storms=geo.storms||[];
+  if(!storms.length){el.innerHTML=`<div class="empty-state">🟢 No recent geomagnetic storms recorded</div>`;return;}
+  el.innerHTML=storms.slice(0,5).map(s=>{
+    const kl=s.all_kp_index||[], mk=kl.length?Math.max(...kl.map(k=>parseFloat(k.kpIndex||0))):0;
+    const g=mk>=8?"G4-G5":mk>=6?"G3":mk>=5?"G2":"G1", sv=mk>=7?"🔴":mk>=5?"🟠":"🟡";
+    return `<div class="event-row" style="padding:.85rem 0;border-bottom:1px solid rgba(255,255,255,.04);">
+      <div style="font-size:1.6rem;">${sv}</div>
+      <div><div class="event-loc">Class ${g} — Peak Kp: ${mk.toFixed(1)}</div><div class="event-time">${fmtDT(s.start_time)}</div></div>
+    </div>`;
+  }).join("");
+}
+
+function buildKpChart(kpData) {
+  if(kpChart) kpChart.destroy();
+  const data=kpData.slice(-48);
+  const labels=data.map(k=>(k.time_tag||"").slice(11,16));
+  const values=data.map(k=>parseFloat(String(k.kp||k.Kp||0).replace(/[+-]/g,""))||0);
+  kpChart=new Chart(document.getElementById("kpChart").getContext("2d"),{type:"bar",data:{labels,datasets:[{label:"Kp",data:values,backgroundColor:values.map(v=>kpColor(v)),borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(2,5,16,.96)",titleColor:"rgba(255,255,255,.6)",bodyColor:"white",borderColor:"rgba(255,255,255,.08)",borderWidth:1}},scales:{x:{grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"rgba(255,255,255,.35)",font:{size:10},maxTicksLimit:12}},y:{min:0,max:9,grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"rgba(255,255,255,.4)",font:{size:11},stepSize:1}}}}});
+}
+
+function buildFlareChart(flares) {
+  if(flareChart) flareChart.destroy();
+  const b={};
+  flares.forEach(f=>{const d=(f.begin_time||"").slice(0,10);if(!d)return;if(!b[d])b[d]={C:0,M:0,X:0};const c=(f.class_type||"C")[0].toUpperCase();if(b[d][c]!==undefined)b[d][c]++;});
+  const labels=Object.keys(b).sort();
+  flareChart=new Chart(document.getElementById("flareChart").getContext("2d"),{type:"bar",data:{labels:labels.map(l=>l.slice(5)),datasets:[{label:"C",data:labels.map(d=>b[d].C),backgroundColor:"rgba(0,212,170,.7)",borderRadius:4},{label:"M",data:labels.map(d=>b[d].M),backgroundColor:"rgba(255,152,0,.8)",borderRadius:4},{label:"X",data:labels.map(d=>b[d].X),backgroundColor:"rgba(239,68,68,.9)",borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(2,5,16,.96)",bodyColor:"white",borderColor:"rgba(255,255,255,.08)",borderWidth:1}},scales:{x:{stacked:true,grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"rgba(255,255,255,.4)",font:{size:11}}},y:{stacked:true,beginAtZero:true,grid:{color:"rgba(255,255,255,.04)"},ticks:{color:"rgba(255,255,255,.4)",stepSize:1}}}}});
+}
+
+async function load() {
+  try {
+    const [flares,cmes,geo,wind,alerts] = await Promise.allSettled([
+      get("/api/flares?days=30"), get("/api/cme?days=30"),
+      get("/api/geomagnetic"), get("/api/solar-wind"), get("/api/alerts")
+    ]);
+    const fd=flares.value||[], cd=cmes.value||[], gd=geo.value||{storms:[],kp_index_72h:[]};
+    const wd=wind.value||{}, ad=alerts.value||[], kp=gd.kp_index_72h||[];
+    renderMetrics(kp,fd,cd,wd); renderAlerts(ad); renderStorms(gd);
+    buildKpChart(kp); buildFlareChart(fd);
+    document.getElementById("lastRefresh").textContent = "Last refresh: " + new Date().toUTCString().slice(17,25) + " UTC";
+  } catch(e) { toast("⚠️ Backend waking up — please wait 30s and refresh", "warn"); }
+}
+
+load(); setInterval(load, 60000);
+toast("📡 Dashboard loading live space weather data...", "ok");
+</script>
+</body>
+</html>

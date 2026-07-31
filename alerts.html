@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Space Weather Alerts — SolarSentinel</title>
+  <meta name="description" content="Active NOAA space weather alerts, geomagnetic storm watches, warnings and 3-day space weather forecast."/>
+  <link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+<div class="space-bg"><div class="stars"></div><div class="stars stars2"></div><div class="nebula"></div></div>
+<div class="toast-container" id="toasts"></div>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-top-alert"><span class="header-top-dot"></span>NOAA SWPC ALERT CENTER — GEOMAGNETIC STORM WATCH / WARNING / ALERT FEED ACTIVE</div>
+    <span id="clock" class="utc-time">--:--:-- UTC</span>
+  </div>
+  <div class="header-main">
+    <a href="/index.html" class="logo-wrap">
+      <svg class="logo-emblem" viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="11" fill="url(#sg5)"/><path d="M22 3v6M22 35v6M3 22h6M35 22h6M7.5 7.5l4.2 4.2M32.3 32.3l4.2 4.2M7.5 36.5l4.2-4.2M32.3 11.7l4.2-4.2" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/><defs><radialGradient id="sg5" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff9c4"/><stop offset="55%" stop-color="#ff9800"/><stop offset="100%" stop-color="#e64a00"/></radialGradient></defs></svg>
+      <div class="logo-text-block"><span class="logo-title">SolarSentinel</span><span class="logo-agency">Space Weather Intelligence Agency</span></div>
+    </a>
+    <nav class="main-nav">
+      <a href="/index.html"       class="nav-item"><span class="nav-icon">🏠</span>Home</a>
+      <a href="/dashboard.html"   class="nav-item"><span class="nav-icon">📡</span>Dashboard</a>
+      <a href="/prediction.html"  class="nav-item"><span class="nav-icon">🤖</span>ML Prediction</a>
+      <a href="/events.html"      class="nav-item"><span class="nav-icon">⚡</span>Events</a>
+      <a href="/alerts.html"      class="nav-item active"><span class="nav-icon">🚨</span>Alerts</a>
+    </nav>
+    <div class="header-actions"><div class="live-badge"><span class="live-dot"></span>LIVE DATA</div></div>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="page-hero-tag">🚨 NOAA Alert Center</div>
+  <h1>Space Weather <span>Alerts</span></h1>
+  <p>Active geomagnetic storm watches, warnings, and alerts issued by the NOAA Space Weather Prediction Center (SWPC)</p>
+</div>
+
+<div class="page-wrap">
+  <div class="container" style="padding-top:2.5rem;padding-bottom:3rem;">
+
+    <!-- ALERT LEVEL BANNER -->
+    <div id="alertBanner" style="background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.2);border-radius:14px;padding:1.25rem 1.75rem;margin-bottom:2rem;display:flex;align-items:center;gap:1.25rem;">
+      <div style="font-size:2rem;" id="bannerIcon">🟢</div>
+      <div>
+        <div style="font-family:var(--font-h);font-size:1rem;font-weight:700;color:white;margin-bottom:.25rem;" id="bannerTitle">Space Weather Conditions</div>
+        <div style="font-size:.85rem;color:rgba(255,255,255,.55);" id="bannerSub">Loading current space weather status...</div>
+      </div>
+      <div style="margin-left:auto;" id="bannerBadge"></div>
+    </div>
+
+    <div class="grid-60-40" style="align-items:start;margin-bottom:2rem;">
+
+      <!-- ACTIVE ALERTS -->
+      <div>
+        <div class="section-title-line" style="margin-bottom:1rem;"><h2>🚨 Active Alerts</h2></div>
+        <div id="alertList"><div class="loading-spin"><div class="spin"></div>Fetching NOAA alerts...</div></div>
+      </div>
+
+      <!-- SCALE GUIDE -->
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="card">
+          <div class="card-title">G-Scale (Geomagnetic)</div>
+          <div style="display:flex;flex-direction:column;gap:.5rem;">
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem;border-radius:8px;background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.12);">
+              <span style="font-family:var(--font-h);font-weight:800;color:#00d4aa;min-width:28px;">G1</span>
+              <div><div style="font-size:.78rem;font-weight:600;color:white;">Minor</div><div style="font-size:.7rem;color:rgba(255,255,255,.4);">Kp=5 · Weak power grid fluctuations</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem;border-radius:8px;background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.12);">
+              <span style="font-family:var(--font-h);font-weight:800;color:#ffd166;min-width:28px;">G2</span>
+              <div><div style="font-size:.78rem;font-weight:600;color:white;">Moderate</div><div style="font-size:.7rem;color:rgba(255,255,255,.4);">Kp=6 · Transformer damage at high latitudes</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem;border-radius:8px;background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.15);">
+              <span style="font-family:var(--font-h);font-weight:800;color:#ff6b35;min-width:28px;">G3</span>
+              <div><div style="font-size:.78rem;font-weight:600;color:white;">Strong</div><div style="font-size:.7rem;color:rgba(255,255,255,.4);">Kp=7 · Intermittent satellite navigation issues</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem;border-radius:8px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);">
+              <span style="font-family:var(--font-h);font-weight:800;color:#f87171;min-width:28px;">G4</span>
+              <div><div style="font-size:.78rem;font-weight:600;color:white;">Severe</div><div style="font-size:.7rem;color:rgba(255,255,255,.4);">Kp=8 · Widespread power outage possible</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem;border-radius:8px;background:rgba(139,0,0,.1);border:1px solid rgba(139,0,0,.3);">
+              <span style="font-family:var(--font-h);font-weight:800;color:#ff0000;min-width:28px;">G5</span>
+              <div><div style="font-size:.78rem;font-weight:600;color:white;">Extreme</div><div style="font-size:.7rem;color:rgba(255,255,255,.4);">Kp=9 · Complete radio blackout, grid failures</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Alert Types</div>
+          <div style="display:flex;flex-direction:column;gap:.6rem;">
+            <div style="display:flex;gap:.75rem;align-items:flex-start;"><span class="tag tag-cyan">WATCH</span><span style="font-size:.78rem;color:rgba(255,255,255,.5);">Conditions may be favorable for a geomagnetic storm within 48 hours</span></div>
+            <div style="display:flex;gap:.75rem;align-items:flex-start;"><span class="tag tag-orange">WARNING</span><span style="font-size:.78rem;color:rgba(255,255,255,.5);">Space weather event has reached threshold. Impacts likely within 3 hours</span></div>
+            <div style="display:flex;gap:.75rem;align-items:flex-start;"><span class="tag tag-red">ALERT</span><span style="font-size:.78rem;color:rgba(255,255,255,.5);">Space weather event threshold has been crossed. Impacts occurring NOW</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3-DAY FORECAST -->
+    <div class="section-title-line" style="margin-bottom:1rem;"><h2>📅 3-Day Space Weather Forecast</h2></div>
+    <div class="chart-card">
+      <div id="forecastText" style="font-family:var(--font-m);font-size:.8rem;color:rgba(255,255,255,.6);line-height:1.9;white-space:pre-wrap;">
+        <div class="loading-spin"><div class="spin"></div>Loading NOAA forecast...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-links"><a href="/index.html">Home</a><a href="/dashboard.html">Dashboard</a><a href="/prediction.html">Prediction</a><a href="/events.html">Events</a><a href="/alerts.html">Alerts</a></div>
+    <div class="footer-status"><span class="live-dot"></span>NOAA SWPC Feed Active</div>
+    <div class="footer-copy">© 2026 SolarSentinel · NASA DONKI & NOAA SWPC</div>
+  </div>
+</footer>
+
+<script src="/common.js"></script>
+<script>
+async function load() {
+  try {
+    const [alerts, forecast, geo] = await Promise.allSettled([
+      get("/api/alerts"), get("/api/forecast"), get("/api/geomagnetic")
+    ]);
+
+    const al = alerts.value || [];
+    const kp = geo.value?.kp_index_72h || [];
+    const latestKp = kp.length ? parseFloat(String(kp[kp.length-1]?.kp||0).replace(/[+-]/g,"")) : 0;
+    const lbl = kpLabel(latestKp);
+
+    // Banner
+    const hasSevere = al.some(a=>(a.message||"").includes("WARNING")||(a.message||"").includes("ALERT"));
+    const banner = document.getElementById("alertBanner");
+    if (hasSevere) {
+      banner.style.background="rgba(239,68,68,.07)"; banner.style.borderColor="rgba(239,68,68,.25)";
+      document.getElementById("bannerIcon").textContent="🔴";
+      document.getElementById("bannerTitle").textContent="Active Space Weather Warnings";
+      document.getElementById("bannerSub").textContent=`${al.length} active alert(s) from NOAA SWPC — monitor conditions closely`;
+      document.getElementById("bannerBadge").innerHTML=`<span class="tag tag-red">⚠️ WARNING ACTIVE</span>`;
+    } else if (al.length > 0) {
+      banner.style.background="rgba(255,107,53,.06)"; banner.style.borderColor="rgba(255,107,53,.2)";
+      document.getElementById("bannerIcon").textContent="🟡";
+      document.getElementById("bannerTitle").textContent="Minor Space Weather Activity";
+      document.getElementById("bannerSub").textContent=`${al.length} informational alert(s) — current Kp: ${latestKp.toFixed(1)} (${lbl.text})`;
+      document.getElementById("bannerBadge").innerHTML=`<span class="tag tag-orange">Kp ${latestKp.toFixed(1)}</span>`;
+    } else {
+      document.getElementById("bannerTitle").textContent="Space Weather Conditions: Normal";
+      document.getElementById("bannerSub").textContent=`No active NOAA alerts — current Kp: ${latestKp.toFixed(1)} (${lbl.text}) — conditions quiet`;
+      document.getElementById("bannerBadge").innerHTML=`<span class="tag tag-green">All Clear</span>`;
+    }
+
+    // Alerts
+    const el = document.getElementById("alertList");
+    if (!al.length) {
+      el.innerHTML=`<div class="card" style="text-align:center;padding:3rem;"><div style="font-size:3rem;margin-bottom:1rem;">✅</div><div style="font-size:1.1rem;font-weight:600;color:white;margin-bottom:.5rem;">No Active Alerts</div><div style="color:rgba(255,255,255,.4);font-size:.875rem;">Space weather conditions are currently quiet. No watches, warnings, or alerts have been issued by NOAA SWPC.</div></div>`;
+    } else {
+      el.innerHTML = al.map(a=>{
+        const m=a.message||"";
+        const isWarn=m.includes("WARNING"), isAlert=m.includes("ALERT")||m.includes("WATCH");
+        const cls=isWarn?"alert-warn":isAlert?"alert-watch":"alert-info";
+        const tlbl=isWarn?"WARNING":isAlert?"ALERT":"INFORMATION";
+        const ttag=isWarn?"tag-orange":isAlert?"tag-red":"tag-cyan";
+        return `<div class="alert-row ${cls}" style="margin-bottom:.75rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+            <span class="tag ${ttag}">${tlbl}</span>
+            <span class="alert-row-time">${a.issue_datetime?fmtDT(a.issue_datetime):"–"}</span>
+          </div>
+          <div class="alert-row-msg">${m.slice(0,300)}${m.length>300?"…":""}</div>
+        </div>`;
+      }).join("");
+    }
+
+    // Forecast
+    const fc = forecast.value;
+    const ftEl = document.getElementById("forecastText");
+    if (typeof fc === "string" && fc.length > 10) {
+      ftEl.textContent = fc;
+    } else if (typeof fc === "object" && fc?.forecast) {
+      ftEl.textContent = fc.forecast;
+    } else {
+      ftEl.innerHTML=`<div class="empty-state">3-day forecast unavailable — NOAA SWPC data may be temporarily unavailable</div>`;
+    }
+
+  } catch(e) { toast("⚠️ Backend waking up — please wait 30 seconds","warn"); }
+}
+
+load();
+</script>
+</body>
+</html>

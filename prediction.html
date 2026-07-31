@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ML Prediction — SolarSentinel</title>
+  <meta name="description" content="Machine learning solar flare prediction — Random Forest classifier predicting next 24-hour flare class using NASA DONKI data."/>
+  <link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+<div class="space-bg"><div class="stars"></div><div class="stars stars2"></div><div class="nebula"></div></div>
+<div class="toast-container" id="toasts"></div>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-top-alert"><span class="header-top-dot"></span>ML MODEL — RANDOM FOREST CLASSIFIER · TRAINED ON NASA DONKI HISTORICAL DATA</div>
+    <span id="clock" class="utc-time">--:--:-- UTC</span>
+  </div>
+  <div class="header-main">
+    <a href="/index.html" class="logo-wrap">
+      <svg class="logo-emblem" viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="11" fill="url(#sg3)"/><path d="M22 3v6M22 35v6M3 22h6M35 22h6M7.5 7.5l4.2 4.2M32.3 32.3l4.2 4.2M7.5 36.5l4.2-4.2M32.3 11.7l4.2-4.2" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/><defs><radialGradient id="sg3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff9c4"/><stop offset="55%" stop-color="#ff9800"/><stop offset="100%" stop-color="#e64a00"/></radialGradient></defs></svg>
+      <div class="logo-text-block"><span class="logo-title">SolarSentinel</span><span class="logo-agency">Space Weather Intelligence Agency</span></div>
+    </a>
+    <nav class="main-nav">
+      <a href="/index.html"       class="nav-item"><span class="nav-icon">🏠</span>Home</a>
+      <a href="/dashboard.html"   class="nav-item"><span class="nav-icon">📡</span>Dashboard</a>
+      <a href="/prediction.html"  class="nav-item active"><span class="nav-icon">🤖</span>ML Prediction</a>
+      <a href="/events.html"      class="nav-item"><span class="nav-icon">⚡</span>Events</a>
+      <a href="/alerts.html"      class="nav-item"><span class="nav-icon">🚨</span>Alerts</a>
+    </nav>
+    <div class="header-actions"><div class="live-badge"><span class="live-dot"></span>LIVE DATA</div></div>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="page-hero-tag">🤖 Machine Learning Engine</div>
+  <h1>Solar Flare <span>Prediction</span></h1>
+  <p>Next 24-hour flare class prediction using a Random Forest classifier trained on 90 days of NASA DONKI historical solar event data</p>
+</div>
+
+<div class="page-wrap">
+  <div class="container" style="padding-top:2.5rem;padding-bottom:3rem;">
+
+    <div class="grid-60-40" style="margin-bottom:2rem;">
+
+      <!-- MAIN PREDICTION CARD -->
+      <div class="pred-card">
+        <div class="pred-shimmer"></div>
+        <div style="position:relative;z-index:1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
+            <div>
+              <div style="font-family:var(--font-h);font-size:.8rem;color:rgba(255,255,255,.4);letter-spacing:.1em;margin-bottom:.25rem;">NEXT 24-HOUR FORECAST</div>
+              <div style="font-family:var(--font-h);font-size:1.1rem;font-weight:700;color:white;">Flare Class Prediction</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:.7rem;color:rgba(255,255,255,.35);font-family:var(--font-m);">Generated at</div>
+              <div style="font-size:.75rem;color:rgba(255,255,255,.5);font-family:var(--font-m);" id="predGenAt">–</div>
+            </div>
+          </div>
+
+          <div style="text-align:center;padding:2rem 0 2.5rem;">
+            <div class="pred-class-big" id="predClass">–</div>
+            <div class="pred-label">Predicted Solar Flare Class</div>
+            <div class="pred-conf" id="predConf">Confidence: –%</div>
+          </div>
+
+          <div style="margin-bottom:1.5rem;">
+            <div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-bottom:1rem;font-family:var(--font-m);letter-spacing:.08em;">PROBABILITY DISTRIBUTION</div>
+            <div class="prob-row"><div class="prob-name">Quiet</div><div class="prob-bar-bg"><div class="prob-bar-fill pf-quiet" id="pb-q" style="width:0%"></div></div><div class="prob-pct" id="pp-q">–%</div></div>
+            <div class="prob-row"><div class="prob-name">C-class</div><div class="prob-bar-bg"><div class="prob-bar-fill pf-c" id="pb-c" style="width:0%"></div></div><div class="prob-pct" id="pp-c">–%</div></div>
+            <div class="prob-row"><div class="prob-name">M-class</div><div class="prob-bar-bg"><div class="prob-bar-fill pf-m" id="pb-m" style="width:0%"></div></div><div class="prob-pct" id="pp-m">–%</div></div>
+            <div class="prob-row"><div class="prob-name">X-class</div><div class="prob-bar-bg"><div class="prob-bar-fill pf-x" id="pb-x" style="width:0%"></div></div><div class="prob-pct" id="pp-x">–%</div></div>
+          </div>
+
+          <div style="background:rgba(255,255,255,.04);border-radius:10px;padding:1rem 1.25rem;border:1px solid rgba(255,255,255,.07);">
+            <div style="font-size:.7rem;color:rgba(255,255,255,.35);font-family:var(--font-m);letter-spacing:.08em;margin-bottom:.6rem;">MODEL INPUTS</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
+              <div style="font-size:.78rem;color:rgba(255,255,255,.5);">Recent Flares (7d):</div><div style="font-size:.78rem;color:white;font-weight:600;font-family:var(--font-m);" id="inp-flares">–</div>
+              <div style="font-size:.78rem;color:rgba(255,255,255,.5);">Avg Kp Index:</div><div style="font-size:.78rem;color:white;font-weight:600;font-family:var(--font-m);" id="inp-kp">–</div>
+              <div style="font-size:.78rem;color:rgba(255,255,255,.5);">Last Trained:</div><div style="font-size:.78rem;color:white;font-weight:600;font-family:var(--font-m);" id="inp-trained">–</div>
+              <div style="font-size:.78rem;color:rgba(255,255,255,.5);">Algorithm:</div><div style="font-size:.78rem;color:white;font-weight:600;font-family:var(--font-m);">Random Forest</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEATURE IMPORTANCES -->
+      <div style="display:flex;flex-direction:column;gap:1.5rem;">
+        <div class="card">
+          <div class="card-title">Feature Importances</div>
+          <div id="featureList"><div class="loading-spin"><div class="spin"></div>Running model...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">How It Works</div>
+          <div style="display:flex;flex-direction:column;gap:.75rem;">
+            <div style="display:flex;gap:.75rem;align-items:flex-start;"><span style="font-size:1.2rem;flex-shrink:0;">📥</span><div><div style="font-size:.82rem;color:white;font-weight:600;margin-bottom:2px;">Data Ingestion</div><div style="font-size:.75rem;color:rgba(255,255,255,.45);line-height:1.5;">Fetches 90 days of solar flare and Kp data from NASA DONKI and NOAA SWPC APIs</div></div></div>
+            <div style="display:flex;gap:.75rem;align-items:flex-start;"><span style="font-size:1.2rem;flex-shrink:0;">⚙️</span><div><div style="font-size:.82rem;color:white;font-weight:600;margin-bottom:2px;">Feature Engineering</div><div style="font-size:.75rem;color:rgba(255,255,255,.45);line-height:1.5;">Encodes flare classes, parses locations, calculates rolling averages for Kp and flare counts</div></div></div>
+            <div style="display:flex;gap:.75rem;align-items:flex-start;"><span style="font-size:1.2rem;flex-shrink:0;">🌲</span><div><div style="font-size:.82rem;color:white;font-weight:600;margin-bottom:2px;">Random Forest</div><div style="font-size:.75rem;color:rgba(255,255,255,.45);line-height:1.5;">100-tree ensemble classifier predicts next 24h flare class and outputs probability scores</div></div></div>
+            <div style="display:flex;gap:.75rem;align-items:flex-start;"><span style="font-size:1.2rem;flex-shrink:0;">🔄</span><div><div style="font-size:.82rem;color:white;font-weight:600;margin-bottom:2px;">Auto-Retraining</div><div style="font-size:.75rem;color:rgba(255,255,255,.45);line-height:1.5;">Model retrains automatically every 6 hours with the latest NASA data via APScheduler</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREDICTION HISTORY -->
+    <div class="chart-card">
+      <div class="chart-header"><h3 class="chart-title">📊 Prediction History</h3><span style="font-size:.72rem;color:rgba(255,255,255,.35);">Last 20 predictions</span></div>
+      <div id="historyTable"><div class="loading-spin"><div class="spin"></div>Loading history...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-links"><a href="/index.html">Home</a><a href="/dashboard.html">Dashboard</a><a href="/prediction.html">Prediction</a><a href="/events.html">Events</a><a href="/alerts.html">Alerts</a></div>
+    <div class="footer-status"><span class="live-dot"></span>ML Engine Online</div>
+    <div class="footer-copy">© 2026 SolarSentinel · NASA DONKI & NOAA SWPC</div>
+  </div>
+</footer>
+
+<script src="/common.js"></script>
+<script>
+async function loadPrediction() {
+  try {
+    const [pred, hist] = await Promise.allSettled([get("/api/predict"), get("/api/predict/history")]);
+    const p = pred.value;
+    if (!p) { toast("⚠️ Prediction model still training... try again in 30s","warn"); return; }
+
+    const cls = p.predicted_class || "–";
+    const badge = document.getElementById("predClass");
+    badge.textContent = cls;
+    const cm = {Quiet:{bg:"rgba(0,212,170,.15)",color:"#00d4aa"},
+                "C-class":{bg:"rgba(6,182,212,.15)",color:"#06b6d4"},
+                "M-class":{bg:"rgba(255,152,0,.15)",color:"#fb923c"},
+                "X-class":{bg:"rgba(239,68,68,.15)",color:"#f87171"}};
+    const s = cm[cls]||cm["C-class"];
+    badge.style.background=s.bg; badge.style.color=s.color; badge.style.boxShadow=`0 0 40px ${s.color}55`;
+
+    document.getElementById("predConf").textContent = `Confidence: ${(p.confidence||0).toFixed(1)}%`;
+    document.getElementById("predGenAt").textContent = fmtDT(p.generated_at);
+
+    const probs = p.probabilities || {};
+    const set = (id, pid, v) => {
+      setTimeout(()=>{document.getElementById(id).style.width=`${v||0}%`;},100);
+      document.getElementById(pid).textContent = `${(v||0).toFixed(1)}%`;
+    };
+    set("pb-q","pp-q",probs.quiet); set("pb-c","pp-c",probs.c_class);
+    set("pb-m","pp-m",probs.m_class); set("pb-x","pp-x",probs.x_class);
+
+    const inp = p.input_summary||{};
+    document.getElementById("inp-flares").textContent = inp.recent_flares_7d ?? "–";
+    document.getElementById("inp-kp").textContent = inp.avg_kp != null ? parseFloat(inp.avg_kp).toFixed(2) : "–";
+    document.getElementById("inp-trained").textContent = fmtDT(p.model_trained_at);
+
+    const feats = p.feature_importances||{};
+    const fl = document.getElementById("featureList");
+    const sorted = Object.entries(feats).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    fl.innerHTML = sorted.map(([n,v])=>`
+      <div class="feat-row">
+        <div class="feat-name">${n.replace(/_/g," ")}</div>
+        <div class="feat-bar-bg"><div class="feat-bar-fill" style="width:${Math.min(v*300,100)}%"></div></div>
+      </div>`).join("") || `<div class="empty-state">No feature data</div>`;
+
+    // History table
+    const rows = (hist.value||[]).slice(0,20);
+    const ht = document.getElementById("historyTable");
+    if (!rows.length) { ht.innerHTML=`<div class="empty-state">No prediction history yet</div>`; return; }
+    ht.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+      <thead><tr style="border-bottom:1px solid rgba(255,255,255,.08);">
+        <th style="text-align:left;padding:.6rem .75rem;font-size:.7rem;color:rgba(255,255,255,.35);font-family:var(--font-m);letter-spacing:.08em;font-weight:600;">TIMESTAMP</th>
+        <th style="text-align:center;padding:.6rem .75rem;font-size:.7rem;color:rgba(255,255,255,.35);font-family:var(--font-m);letter-spacing:.08em;font-weight:600;">PREDICTED CLASS</th>
+        <th style="text-align:center;padding:.6rem .75rem;font-size:.7rem;color:rgba(255,255,255,.35);font-family:var(--font-m);letter-spacing:.08em;font-weight:600;">CONFIDENCE</th>
+      </tr></thead>
+      <tbody>${rows.map(r=>`<tr style="border-bottom:1px solid rgba(255,255,255,.04);transition:background .2s;" onmouseover="this.style.background='rgba(255,255,255,.02)'" onmouseout="this.style.background=''">
+        <td style="padding:.65rem .75rem;font-size:.78rem;color:rgba(255,255,255,.45);font-family:var(--font-m);">${fmtDT(r.generated_at)}</td>
+        <td style="padding:.65rem .75rem;text-align:center;"><span class="tag ${r.predicted_class==='X-class'?'tag-red':r.predicted_class==='M-class'?'tag-orange':r.predicted_class==='C-class'?'tag-cyan':'tag-green'}">${r.predicted_class||"–"}</span></td>
+        <td style="padding:.65rem .75rem;text-align:center;font-size:.78rem;color:rgba(255,255,255,.6);font-family:var(--font-m);">${(r.confidence||0).toFixed(1)}%</td>
+      </tr>`).join("")}</tbody>
+    </table></div>`;
+
+  } catch(e) { console.error(e); toast("⚠️ Backend waking up — please wait 30 seconds","warn"); }
+}
+
+loadPrediction();
+</script>
+</body>
+</html>
