@@ -1,12 +1,3 @@
-"""
-Database service — Supabase (PostgreSQL) via psycopg2-binary
-No C compilation needed — psycopg2-binary is pre-built.
-
-Tables:
-  - users         : registered accounts (persists across Render restarts)
-  - login_history : every login event with IP + browser info
-"""
-
 import os
 import logging
 from datetime import datetime, timedelta
@@ -29,6 +20,23 @@ TOKEN_EXPIRE = 60 * 24 * 7   # 7 days
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _bcrypt_safe(password: str) -> str:
+    """
+    bcrypt only uses the first 72 bytes of a password and raises/warns
+    beyond that. Truncate on a UTF-8 byte boundary so we never cut a
+    multi-byte character in half.
+    """
+    pw_bytes = password.encode("utf-8")
+    if len(pw_bytes) <= 72:
+        return password
+    truncated = pw_bytes[:72]
+    while truncated:
+        try:
+            return truncated.decode("utf-8")
+        except UnicodeDecodeError:
+            truncated = truncated[:-1]
+    return ""  # extremely unlikely fallback
 
 # ─── SYNC DB HELPER ──────────────────────────────────────────────────────────
 def _run(sql: str, params=None, *, fetch_one=False, fetch_all=False):
@@ -88,7 +96,7 @@ async def init_users_table():
         fetch_one=True
     )
     if not existing:
-        hashed = pwd_context.hash("Solar2026!")
+        hashed = pwd_context.hash(_bcrypt_safe("Solar2026!"))
         await _q(
             "INSERT INTO users (email, username, password) VALUES (%s, %s, %s)",
             ("admin@solarsentinel.com", "Admin", hashed)
@@ -103,7 +111,7 @@ async def get_user_by_id(user_id: int) -> Optional[dict]:
     return await _q("SELECT * FROM users WHERE id = %s", (user_id,), fetch_one=True)
 
 async def create_user(email: str, username: str, password: str) -> dict:
-    hashed = pwd_context.hash(password)
+    hashed = pwd_context.hash(_bcrypt_safe(password))
     try:
         row = await _q(
             "INSERT INTO users (email, username, password) VALUES (%s, %s, %s) RETURNING *",
@@ -148,7 +156,7 @@ async def get_user_login_history(user_id: int, limit: int = 10) -> list:
 
 # ─── AUTH HELPERS ────────────────────────────────────────────────────────────
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return pwd_context.verify(_bcrypt_safe(plain), hashed)
 
 def create_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
