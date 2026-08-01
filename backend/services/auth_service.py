@@ -1,155 +1,150 @@
 """
-Database service — Supabase (PostgreSQL) for users & login history
-SQLite is kept separately for weather cache only.
+Database service — Supabase (PostgreSQL) via psycopg2-binary
+No C compilation needed — psycopg2-binary is pre-built.
 
-Tables managed here:
-  - users         : registered accounts
-  - login_history : every login event with timestamp + IP
+Tables:
+  - users         : registered accounts (persists across Render restarts)
+  - login_history : every login event with IP + browser info
 """
 
 import os
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
+from asyncio import get_event_loop
+from functools import partial
 
-import asyncpg
+import psycopg2
+import psycopg2.extras
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 logger = logging.getLogger(__name__)
 
-# ─── CONFIG ────────────────────────────────────────────────────────────────
-SECRET_KEY   = os.getenv("JWT_SECRET_KEY", "solar-sentinel-super-secret-key-change-in-production-2026")
+# ─── CONFIG ─────────────────────────────────────────────────────────────────
+SECRET_KEY   = os.getenv("JWT_SECRET_KEY", "solar-sentinel-super-secret-key-2026")
 ALGORITHM    = "HS256"
-TOKEN_EXPIRE = 60 * 24 * 7   # 7 days in minutes
+TOKEN_EXPIRE = 60 * 24 * 7   # 7 days
 
-DATABASE_URL = os.getenv("DATABASE_URL", "")   # Set this on Render!
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# ─── CONNECTION POOL ────────────────────────────────────────────────────────
-_pool: Optional[asyncpg.Pool] = None
+# ─── SYNC DB HELPER ──────────────────────────────────────────────────────────
+def _run(sql: str, params=None, *, fetch_one=False, fetch_all=False):
+    """Sync psycopg2 query — wrapped in executor for async callers."""
+    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, params)
+            conn.commit()
+            if fetch_one:
+                row = cur.fetchone()
+                return dict(row) if row else None
+            if fetch_all:
+                rows = cur.fetchall()
+                return [dict(r) for r in rows]
+            return None
+    finally:
+        conn.close()
 
-async def get_pool() -> asyncpg.Pool:
-    global _pool
-    if _pool is None:
-        # asyncpg needs postgresql:// not postgres://
-        url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-        _pool = await asyncpg.create_pool(url, min_size=1, max_size=5, ssl="require")
-        logger.info("✅ Connected to Supabase PostgreSQL")
-    return _pool
+async def _q(sql: str, params=None, *, fetch_one=False, fetch_all=False):
+    """Async wrapper around _run using a thread executor."""
+    loop = get_event_loop()
+    fn   = partial(_run, sql, params, fetch_one=fetch_one, fetch_all=fetch_all)
+    return await loop.run_in_executor(None, fn)
 
-# ─── SCHEMA SETUP ──────────────────────────────────────────────────────────
+# ─── SCHEMA SETUP ───────────────────────────────────────────────────────────
 async def init_users_table():
-    """Create tables in Supabase and seed default admin."""
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        # Users table
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id         SERIAL PRIMARY KEY,
-                email      TEXT UNIQUE NOT NULL,
-                username   TEXT NOT NULL,
-                password   TEXT NOT NULL,
-                created_at TIMESTAMPTZ DEFAULT NOW()
-            )
-        """)
+    """Create tables in Supabase and seed default admin if not present."""
+    # Users table
+    await _q("""
+        CREATE TABLE IF NOT EXISTS users (
+            id         SERIAL PRIMARY KEY,
+            email      TEXT UNIQUE NOT NULL,
+            username   TEXT NOT NULL,
+            password   TEXT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    """)
 
-        # Login history table
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS login_history (
-                id         SERIAL PRIMARY KEY,
-                user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                email      TEXT NOT NULL,
-                username   TEXT NOT NULL,
-                ip_address TEXT DEFAULT 'unknown',
-                user_agent TEXT DEFAULT '',
-                logged_in_at TIMESTAMPTZ DEFAULT NOW()
-            )
-        """)
+    # Login history table
+    await _q("""
+        CREATE TABLE IF NOT EXISTS login_history (
+            id           SERIAL PRIMARY KEY,
+            user_id      INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            email        TEXT NOT NULL,
+            username     TEXT NOT NULL,
+            ip_address   TEXT DEFAULT 'unknown',
+            user_agent   TEXT DEFAULT '',
+            logged_in_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    """)
 
-        # Seed default admin if not exists
-        existing = await conn.fetchrow("SELECT id FROM users WHERE email = $1", "admin@solarsentinel.com")
-        if not existing:
-            hashed = pwd_context.hash("Solar2026!")
-            await conn.execute(
-                "INSERT INTO users (email, username, password) VALUES ($1, $2, $3)",
-                "admin@solarsentinel.com", "Admin", hashed
-            )
-            logger.info("✅ Default admin seeded: admin@solarsentinel.com / Solar2026!")
+    # Seed default admin once
+    existing = await _q(
+        "SELECT id FROM users WHERE email = %s",
+        ("admin@solarsentinel.com",),
+        fetch_one=True
+    )
+    if not existing:
+        hashed = pwd_context.hash("Solar2026!")
+        await _q(
+            "INSERT INTO users (email, username, password) VALUES (%s, %s, %s)",
+            ("admin@solarsentinel.com", "Admin", hashed)
+        )
+        logger.info("✅ Default admin seeded: admin@solarsentinel.com / Solar2026!")
 
-# ─── USER CRUD ──────────────────────────────────────────────────────────────
+# ─── USER CRUD ───────────────────────────────────────────────────────────────
 async def get_user_by_email(email: str) -> Optional[dict]:
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT * FROM users WHERE email = $1", email)
-        return dict(row) if row else None
+    return await _q("SELECT * FROM users WHERE email = %s", (email,), fetch_one=True)
 
 async def get_user_by_id(user_id: int) -> Optional[dict]:
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
-        return dict(row) if row else None
+    return await _q("SELECT * FROM users WHERE id = %s", (user_id,), fetch_one=True)
 
 async def create_user(email: str, username: str, password: str) -> dict:
     hashed = pwd_context.hash(password)
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        try:
-            row = await conn.fetchrow(
-                "INSERT INTO users (email, username, password) VALUES ($1, $2, $3) RETURNING *",
-                email, username, hashed
-            )
-            return dict(row)
-        except asyncpg.UniqueViolationError:
-            raise ValueError(f"Email already registered: {email}")
+    try:
+        row = await _q(
+            "INSERT INTO users (email, username, password) VALUES (%s, %s, %s) RETURNING *",
+            (email, username, hashed),
+            fetch_one=True
+        )
+        return row
+    except psycopg2.errors.UniqueViolation:
+        raise ValueError(f"Email already registered: {email}")
 
 async def get_all_users() -> list:
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT id, email, username, created_at FROM users ORDER BY created_at DESC"
-        )
-        return [dict(r) for r in rows]
+    return await _q(
+        "SELECT id, email, username, created_at FROM users ORDER BY created_at DESC",
+        fetch_all=True
+    ) or []
 
-# ─── LOGIN HISTORY ──────────────────────────────────────────────────────────
+# ─── LOGIN HISTORY ───────────────────────────────────────────────────────────
 async def record_login(user_id: int, email: str, username: str,
-                       ip_address: str = "unknown", user_agent: str = "") -> None:
-    """Record a login event in login_history."""
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        await conn.execute(
-            """INSERT INTO login_history (user_id, email, username, ip_address, user_agent)
-               VALUES ($1, $2, $3, $4, $5)""",
-            user_id, email, username, ip_address, user_agent[:300]
-        )
+                        ip_address: str = "unknown", user_agent: str = "") -> None:
+    await _q(
+        """INSERT INTO login_history (user_id, email, username, ip_address, user_agent)
+           VALUES (%s, %s, %s, %s, %s)""",
+        (user_id, email, username, ip_address, user_agent[:300])
+    )
 
 async def get_login_history(limit: int = 50) -> list:
-    """Get all login events, most recent first."""
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            """SELECT lh.id, lh.email, lh.username, lh.ip_address,
-                      lh.user_agent, lh.logged_in_at, u.id as user_id
-               FROM login_history lh
-               LEFT JOIN users u ON lh.user_id = u.id
-               ORDER BY lh.logged_in_at DESC
-               LIMIT $1""",
-            limit
-        )
-        return [dict(r) for r in rows]
+    return await _q(
+        """SELECT id, email, username, ip_address, user_agent, logged_in_at
+           FROM login_history ORDER BY logged_in_at DESC LIMIT %s""",
+        (limit,),
+        fetch_all=True
+    ) or []
 
-async def get_user_login_history(user_id: int, limit: int = 20) -> list:
-    """Get login history for a specific user."""
-    pool = await get_pool()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            """SELECT id, ip_address, user_agent, logged_in_at
-               FROM login_history WHERE user_id = $1
-               ORDER BY logged_in_at DESC LIMIT $2""",
-            user_id, limit
-        )
-        return [dict(r) for r in rows]
+async def get_user_login_history(user_id: int, limit: int = 10) -> list:
+    return await _q(
+        """SELECT id, ip_address, user_agent, logged_in_at
+           FROM login_history WHERE user_id = %s
+           ORDER BY logged_in_at DESC LIMIT %s""",
+        (user_id, limit),
+        fetch_all=True
+    ) or []
 
 # ─── AUTH HELPERS ────────────────────────────────────────────────────────────
 def verify_password(plain: str, hashed: str) -> bool:
@@ -157,7 +152,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=TOKEN_EXPIRE))
+    expire    = datetime.utcnow() + (expires_delta or timedelta(minutes=TOKEN_EXPIRE))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
