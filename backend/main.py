@@ -22,7 +22,15 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     logger.info("🚀 Starting Solar Flare Prediction API...")
     await init_db()
-    await init_users_table()
+
+    # Connect to Supabase (requires DATABASE_URL env var on Render)
+    try:
+        await init_users_table()
+        logger.info("✅ Supabase PostgreSQL connected successfully.")
+    except Exception as e:
+        logger.warning(f"⚠️  Supabase not available: {e}")
+        logger.warning("⚠️  Set DATABASE_URL environment variable on Render!")
+
     await ml_engine.train()
     app.state.ml_engine = ml_engine
 
