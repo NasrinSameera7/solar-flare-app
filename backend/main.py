@@ -6,8 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from routers import flares, cme, geomagnetic, predictions, solar, alerts
+from routers.auth import router as auth_router
 from services.cache import init_db
 from services.ml_engine import MLEngine
+from services.auth_service import init_users_table
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,6 +22,7 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     logger.info("🚀 Starting Solar Flare Prediction API...")
     await init_db()
+    await init_users_table()
     await ml_engine.train()
     app.state.ml_engine = ml_engine
 
@@ -48,12 +51,13 @@ app.add_middleware(
 )
 
 # Include all routers
-app.include_router(flares.router, prefix="/api", tags=["Solar Flares"])
-app.include_router(cme.router, prefix="/api", tags=["CME"])
-app.include_router(geomagnetic.router, prefix="/api", tags=["Geomagnetic"])
-app.include_router(predictions.router, prefix="/api", tags=["Predictions"])
-app.include_router(solar.router, prefix="/api", tags=["Solar Wind"])
-app.include_router(alerts.router, prefix="/api", tags=["Alerts"])
+app.include_router(auth_router,       prefix="/api", tags=["Auth"])
+app.include_router(flares.router,     prefix="/api", tags=["Solar Flares"])
+app.include_router(cme.router,        prefix="/api", tags=["CME"])
+app.include_router(geomagnetic.router,prefix="/api", tags=["Geomagnetic"])
+app.include_router(predictions.router,prefix="/api", tags=["Predictions"])
+app.include_router(solar.router,      prefix="/api", tags=["Solar Wind"])
+app.include_router(alerts.router,     prefix="/api", tags=["Alerts"])
 
 @app.get("/health")
 async def health_check():
