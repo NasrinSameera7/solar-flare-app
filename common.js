@@ -1,10 +1,66 @@
 /* =====================================================
-   SOLAR SENTINEL — Shared Utilities & API Client
+   SOLAR SENTINEL — Shared Utilities, API Client & Auth
    ===================================================== */
 
 const API = "https://solar-flare-api-1mvi.onrender.com";
 
-/* ─── HELPERS ─── */
+/* ─── AUTH ─────────────────────────────────────────── */
+function getToken()  { return localStorage.getItem("ss_token"); }
+function getUser()   { try { return JSON.parse(localStorage.getItem("ss_user") || "null"); } catch { return null; } }
+function logout()    { localStorage.removeItem("ss_token"); localStorage.removeItem("ss_user"); window.location.href = "/login.html"; }
+
+/** Call on every protected page. Redirects to /login.html if not authenticated. */
+async function requireAuth() {
+  const token = getToken();
+  if (!token) { window.location.href = "/login.html"; return false; }
+  try {
+    const res = await fetch(`${API}/api/auth/me`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) { logout(); return false; }
+    const user = await res.json();
+    localStorage.setItem("ss_user", JSON.stringify(user));
+    renderUserBadge(user);
+    return true;
+  } catch {
+    // Network error — allow page to load (Render may be waking up)
+    const user = getUser();
+    if (user) { renderUserBadge(user); return true; }
+    window.location.href = "/login.html"; return false;
+  }
+}
+
+function renderUserBadge(user) {
+  const el = document.getElementById("userBadge");
+  if (!el || !user) return;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.6rem;">
+      <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--purple));display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:white;flex-shrink:0;">
+        ${(user.username||"U")[0].toUpperCase()}
+      </div>
+      <div style="display:flex;flex-direction:column;line-height:1.2;">
+        <span style="font-size:.78rem;font-weight:600;color:white;">${user.username||"User"}</span>
+        <span style="font-size:.65rem;color:rgba(255,255,255,.35);font-family:var(--font-m);">${user.email||""}</span>
+      </div>
+      <button onclick="logout()" title="Sign out" style="margin-left:.25rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:rgba(255,255,255,.5);font-size:.72rem;padding:.3rem .6rem;cursor:pointer;transition:all .2s;font-family:var(--font-m);" onmouseover="this.style.background='rgba(239,68,68,.15)';this.style.color='#f87171'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.color='rgba(255,255,255,.5)'">
+        ↩ Logout
+      </button>
+    </div>`;
+}
+
+/* ─── API HELPERS ───────────────────────────────────── */
+function getAuthHeaders() {
+  const token = getToken();
+  return token ? { "Authorization": `Bearer ${token}` } : {};
+}
+
+async function get(path) {
+  const r = await fetch(`${API}${path}`, { headers: getAuthHeaders() });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+/* ─── FORMATTING ────────────────────────────────────── */
 function fmtDT(s) {
   if (!s) return "–";
   try {
@@ -31,12 +87,7 @@ function flareCSS(c) {
   return x==="X"?"cls-x":x==="M"?"cls-m":x==="C"?"cls-c":x==="B"?"cls-b":"cls-q";
 }
 
-async function get(path) {
-  const r = await fetch(`${API}${path}`);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-
+/* ─── TOAST ─────────────────────────────────────────── */
 function toast(msg, type="ok") {
   const c = document.getElementById("toasts");
   if (!c) return;
@@ -44,10 +95,10 @@ function toast(msg, type="ok") {
   t.className = `toast toast-${type}`;
   t.textContent = msg;
   c.appendChild(t);
-  setTimeout(() => { t.style.animation="toastOut .4s ease forwards"; setTimeout(()=>t.remove(),400); }, 4000);
+  setTimeout(() => { t.style.animation="toastOut .4s ease forwards"; setTimeout(()=>t.remove(),400); }, 4500);
 }
 
-/* ─── CLOCK ─── */
+/* ─── CLOCK ─────────────────────────────────────────── */
 function startClock() {
   const el = document.getElementById("clock");
   if (!el) return;
@@ -58,7 +109,7 @@ function startClock() {
   tick(); setInterval(tick, 1000);
 }
 
-/* ─── GAUGE ─── */
+/* ─── GAUGE ─────────────────────────────────────────── */
 function drawGauge(canvas, value, max=9) {
   const ctx = canvas.getContext("2d");
   const w=canvas.width, h=canvas.height, cx=w/2, cy=h-15;
@@ -76,7 +127,7 @@ function drawGauge(canvas, value, max=9) {
   ctx.strokeStyle="white"; ctx.lineWidth=4; ctx.stroke(); ctx.shadowBlur=0;
 }
 
-/* ─── COUNTER ANIM ─── */
+/* ─── COUNTER ANIM ──────────────────────────────────── */
 function countUp(el, target, dec=0, dur=900) {
   const s=parseFloat(el.textContent)||0, e=parseFloat(target)||0, t0=performance.now();
   const step=now=>{
@@ -87,14 +138,13 @@ function countUp(el, target, dec=0, dur=900) {
   requestAnimationFrame(step);
 }
 
-/* ─── NAV ACTIVE STATE ─── */
-function setActiveNav() {
+/* ─── INIT ──────────────────────────────────────────── */
+document.addEventListener("DOMContentLoaded", () => {
+  startClock();
+  // Auto-highlight active nav link
   const page = location.pathname.split("/").pop() || "index.html";
   document.querySelectorAll(".nav-item").forEach(a => {
-    const href = a.getAttribute("href") || "";
-    const match = href.includes(page) || (page==="index.html" && href==="index.html");
-    a.classList.toggle("active", match);
+    const href = (a.getAttribute("href") || "").split("/").pop();
+    a.classList.toggle("active", href === page || (page === "" && href === "index.html"));
   });
-}
-
-document.addEventListener("DOMContentLoaded", () => { startClock(); setActiveNav(); });
+});

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Create Account — SolarSentinel</title>
+  <meta name="description" content="Create your SolarSentinel account to access live space weather data and solar flare predictions."/>
+  <link rel="stylesheet" href="/style.css"/>
+  <style>
+    .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; position: relative; z-index: 1; }
+    .auth-wrap { display: grid; grid-template-columns: 1fr 1fr; width: 100%; max-width: 1000px; background: rgba(8,14,32,0.9); border: 1px solid rgba(124,58,237,0.25); border-radius: 24px; overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset; backdrop-filter: blur(24px); }
+    @media(max-width:768px){.auth-wrap{grid-template-columns:1fr}.auth-panel{display:none}}
+    .auth-panel { background: linear-gradient(135deg, rgba(124,58,237,0.14), rgba(255,107,53,0.08)); border-right: 1px solid rgba(255,255,255,0.07); padding: 3rem; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+    .auth-panel-glow { position: absolute; top: -30%; right: -20%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 65%); animation: authGlow 7s ease-in-out infinite alternate; }
+    @keyframes authGlow { from{transform:scale(1);opacity:.6} to{transform:scale(1.3);opacity:1} }
+    .auth-form-side { padding: 3rem; display: flex; flex-direction: column; justify-content: center; }
+    .auth-form-title { font-family: var(--font-h); font-size: 1.4rem; font-weight: 800; color: white; margin-bottom: .4rem; }
+    .auth-form-sub { font-size: .85rem; color: rgba(255,255,255,.4); margin-bottom: 2rem; }
+    .auth-form-sub a { color: var(--orange); transition: opacity .2s; }
+    .auth-form-sub a:hover { opacity: .8; }
+    .form-group { margin-bottom: 1.1rem; }
+    .form-label { display: block; font-size: .72rem; font-weight: 600; color: rgba(255,255,255,.45); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .5rem; font-family: var(--font-m); }
+    .form-input { width: 100%; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: .85rem 1rem; color: white; font-size: .9rem; font-family: var(--font-b); outline: none; transition: border-color .25s, box-shadow .25s, background .25s; }
+    .form-input::placeholder { color: rgba(255,255,255,.25); }
+    .form-input:focus { border-color: rgba(124,58,237,.5); background: rgba(124,58,237,.04); box-shadow: 0 0 0 3px rgba(124,58,237,.12); }
+    .form-input.error { border-color: rgba(239,68,68,.5); box-shadow: 0 0 0 3px rgba(239,68,68,.1); }
+    .auth-btn { width: 100%; background: linear-gradient(135deg, var(--purple), #5b21b6); color: white; font-weight: 700; font-size: .95rem; letter-spacing: .04em; padding: .9rem; border: none; border-radius: 10px; cursor: pointer; font-family: var(--font-h); transition: transform .2s, box-shadow .2s; box-shadow: 0 4px 20px rgba(124,58,237,.35); margin-top: .5rem; }
+    .auth-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(124,58,237,.5); }
+    .auth-btn:active { transform: translateY(0); }
+    .auth-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .error-msg { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); border-radius: 8px; padding: .75rem 1rem; color: #f87171; font-size: .82rem; margin-bottom: 1rem; display: none; }
+    .error-msg.show { display: block; animation: fadeUp .3s ease; }
+    .success-msg { background: rgba(0,212,170,.08); border: 1px solid rgba(0,212,170,.25); border-radius: 8px; padding: .75rem 1rem; color: var(--green); font-size: .82rem; margin-bottom: 1rem; display: none; }
+    .success-msg.show { display: block; animation: fadeUp .3s ease; }
+    .pw-strength { height: 4px; border-radius: 2px; background: rgba(255,255,255,.06); margin-top: .4rem; overflow: hidden; }
+    .pw-strength-fill { height: 100%; border-radius: 2px; transition: width .3s, background .3s; width: 0%; }
+    .pw-hint { font-size: .68rem; color: rgba(255,255,255,.3); margin-top: .3rem; font-family: var(--font-m); }
+    .auth-stat-row { display: flex; align-items: center; gap: .75rem; font-size: .8rem; color: rgba(255,255,255,.55); margin-bottom: .75rem; }
+    .auth-stat-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(124,58,237,.12); border: 1px solid rgba(124,58,237,.2); display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="space-bg"><div class="stars"></div><div class="stars stars2"></div><div class="nebula"></div></div>
+
+<div class="auth-page">
+  <div class="auth-wrap">
+
+    <!-- LEFT PANEL -->
+    <div class="auth-panel">
+      <div class="auth-panel-glow"></div>
+      <div>
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style="filter:drop-shadow(0 0 14px rgba(124,58,237,.7));margin-bottom:1rem;">
+          <circle cx="22" cy="22" r="11" fill="url(#sg-reg)"/>
+          <path d="M22 3v6M22 35v6M3 22h6M35 22h6M7.5 7.5l4.2 4.2M32.3 32.3l4.2 4.2M7.5 36.5l4.2-4.2M32.3 11.7l4.2-4.2" stroke="#7c3aed" stroke-width="2.5" stroke-linecap="round"/>
+          <defs><radialGradient id="sg-reg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff9c4"/><stop offset="55%" stop-color="#ff9800"/><stop offset="100%" stop-color="#e64a00"/></radialGradient></defs>
+        </svg>
+        <div style="font-family:var(--font-h);font-size:1rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">SolarSentinel</div>
+        <div style="font-size:.6rem;color:rgba(255,255,255,.3);letter-spacing:.15em;text-transform:uppercase;font-family:var(--font-m);margin-bottom:2rem;">Space Weather Intelligence Agency</div>
+        <div style="font-family:var(--font-h);font-size:1.6rem;font-weight:900;color:white;line-height:1.2;margin-bottom:1rem;">Join the <span style="background:linear-gradient(135deg,#a78bfa,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Mission</span></div>
+        <div style="font-size:.88rem;color:rgba(255,255,255,.45);line-height:1.7;margin-bottom:2rem;">Get free access to live space weather data, AI-powered predictions, and real-time NOAA alerts.</div>
+      </div>
+      <div>
+        <div class="auth-stat-row"><div class="auth-stat-icon">🆓</div>100% free — no credit card needed</div>
+        <div class="auth-stat-row"><div class="auth-stat-icon">🔒</div>Secure JWT authentication</div>
+        <div class="auth-stat-row"><div class="auth-stat-icon">⚡</div>Instant access after signup</div>
+        <div class="auth-stat-row"><div class="auth-stat-icon">🌍</div>Access from anywhere, any device</div>
+      </div>
+    </div>
+
+    <!-- RIGHT FORM -->
+    <div class="auth-form-side">
+      <div class="auth-form-title">Create Account</div>
+      <div class="auth-form-sub">Already have an account? <a href="/login.html">Sign in →</a></div>
+
+      <div class="error-msg"   id="errorMsg"></div>
+      <div class="success-msg" id="successMsg"></div>
+
+      <form id="registerForm" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="username">Full Name</label>
+          <input class="form-input" type="text" id="username" placeholder="e.g. Nasrin Sameera" required autocomplete="name"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input class="form-input" type="email" id="email" placeholder="you@example.com" required autocomplete="email"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input class="form-input" type="password" id="password" placeholder="Min. 6 characters" required autocomplete="new-password"/>
+          <div class="pw-strength"><div class="pw-strength-fill" id="pwBar"></div></div>
+          <div class="pw-hint" id="pwHint">Enter a password</div>
+        </div>
+        <button class="auth-btn" type="submit" id="registerBtn">
+          Create My Account →
+        </button>
+      </form>
+
+      <div style="margin-top:1.5rem;font-size:.72rem;color:rgba(255,255,255,.25);text-align:center;line-height:1.6;">
+        By creating an account you agree that this is a demo project powered by NASA & NOAA public APIs.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "https://solar-flare-api-1mvi.onrender.com";
+
+// If already logged in, skip
+if (localStorage.getItem("ss_token")) { window.location.href = "/index.html"; }
+
+// Password strength meter
+document.getElementById("password").addEventListener("input", function() {
+  const pw = this.value, bar = document.getElementById("pwBar"), hint = document.getElementById("pwHint");
+  let score = 0, msg = "", color = "";
+  if (pw.length >= 6) score++;
+  if (pw.length >= 10) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const levels = [
+    {w:"0%",   c:"transparent", m:"Enter a password"},
+    {w:"20%",  c:"#ef4444",     m:"Very weak"},
+    {w:"40%",  c:"#ff9800",     m:"Weak"},
+    {w:"60%",  c:"#ffd166",     m:"Fair"},
+    {w:"80%",  c:"#06b6d4",     m:"Good"},
+    {w:"100%", c:"#00d4aa",     m:"Strong ✓"},
+  ];
+  const l = levels[score] || levels[0];
+  bar.style.width = l.w; bar.style.background = l.c;
+  hint.textContent = l.m; hint.style.color = l.c;
+});
+
+document.getElementById("registerForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("registerBtn");
+  const err = document.getElementById("errorMsg");
+  const suc = document.getElementById("successMsg");
+  err.classList.remove("show"); suc.classList.remove("show");
+
+  const username = document.getElementById("username").value.trim();
+  const email    = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!username || username.length < 2) {
+    err.textContent = "⚠️ Please enter your full name (at least 2 characters)";
+    err.classList.add("show"); return;
+  }
+  if (!email.includes("@")) {
+    err.textContent = "⚠️ Please enter a valid email address";
+    err.classList.add("show"); return;
+  }
+  if (password.length < 6) {
+    err.textContent = "⚠️ Password must be at least 6 characters";
+    err.classList.add("show"); return;
+  }
+
+  btn.disabled = true; btn.textContent = "Creating account...";
+
+  try {
+    const res = await fetch(`${API}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { throw new Error(data.detail || "Registration failed"); }
+
+    localStorage.setItem("ss_token", data.access_token);
+    localStorage.setItem("ss_user", JSON.stringify(data.user));
+    suc.textContent = `✅ Account created! Welcome, ${data.user.username}! Redirecting...`;
+    suc.classList.add("show");
+    setTimeout(() => { window.location.href = "/index.html"; }, 1200);
+
+  } catch (ex) {
+    err.textContent = "⚠️ " + ex.message;
+    err.classList.add("show");
+    btn.disabled = false; btn.textContent = "Create My Account →";
+  }
+});
+</script>
+</body>
+</html>

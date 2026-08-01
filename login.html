@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Sign In — SolarSentinel</title>
+  <meta name="description" content="Sign in to SolarSentinel Space Weather Intelligence Agency."/>
+  <link rel="stylesheet" href="/style.css"/>
+  <style>
+    .auth-page {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 2rem; position: relative; z-index: 1;
+    }
+    .auth-wrap {
+      display: grid; grid-template-columns: 1fr 1fr;
+      width: 100%; max-width: 1000px;
+      background: rgba(8,14,32,0.9);
+      border: 1px solid rgba(255,107,53,0.2);
+      border-radius: 24px; overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset;
+      backdrop-filter: blur(24px);
+    }
+    @media(max-width:768px){.auth-wrap{grid-template-columns:1fr}.auth-panel{display:none}}
+    .auth-panel {
+      background: linear-gradient(135deg, rgba(255,107,53,0.12), rgba(124,58,237,0.10));
+      border-right: 1px solid rgba(255,255,255,0.07);
+      padding: 3rem; display: flex; flex-direction: column; justify-content: space-between;
+      position: relative; overflow: hidden;
+    }
+    .auth-panel-glow {
+      position: absolute; top: -40%; left: -20%;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(255,107,53,0.18) 0%, transparent 65%);
+      animation: authGlow 6s ease-in-out infinite alternate;
+    }
+    @keyframes authGlow { from{transform:scale(1);opacity:.7} to{transform:scale(1.2);opacity:1} }
+    .auth-panel-logo { position: relative; z-index: 1; }
+    .auth-panel-title { font-family: var(--font-h); font-size: 1.8rem; font-weight: 900; color: white; line-height: 1.2; margin-bottom: 1rem; position: relative; z-index: 1; }
+    .auth-panel-title span { background: linear-gradient(135deg,#ff6b35,#ffd166); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .auth-panel-desc { font-size: .9rem; color: rgba(255,255,255,.45); line-height: 1.7; position: relative; z-index: 1; }
+    .auth-panel-stats { display: flex; flex-direction: column; gap: .75rem; position: relative; z-index: 1; }
+    .auth-stat-row { display: flex; align-items: center; gap: .75rem; font-size: .8rem; color: rgba(255,255,255,.55); }
+    .auth-stat-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,107,53,.12); border: 1px solid rgba(255,107,53,.2); display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0; }
+
+    .auth-form-side { padding: 3rem; display: flex; flex-direction: column; justify-content: center; }
+    .auth-form-title { font-family: var(--font-h); font-size: 1.4rem; font-weight: 800; color: white; margin-bottom: .4rem; }
+    .auth-form-sub { font-size: .85rem; color: rgba(255,255,255,.4); margin-bottom: 2rem; }
+    .auth-form-sub a { color: var(--orange); transition: opacity .2s; }
+    .auth-form-sub a:hover { opacity: .8; }
+
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label { display: block; font-size: .72rem; font-weight: 600; color: rgba(255,255,255,.45); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .5rem; font-family: var(--font-m); }
+    .form-input {
+      width: 100%; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 10px; padding: .85rem 1rem; color: white; font-size: .9rem;
+      font-family: var(--font-b); outline: none;
+      transition: border-color .25s, box-shadow .25s, background .25s;
+    }
+    .form-input::placeholder { color: rgba(255,255,255,.25); }
+    .form-input:focus { border-color: rgba(255,107,53,.5); background: rgba(255,107,53,.04); box-shadow: 0 0 0 3px rgba(255,107,53,.1); }
+    .form-input.error { border-color: rgba(239,68,68,.5); box-shadow: 0 0 0 3px rgba(239,68,68,.1); }
+
+    .auth-btn {
+      width: 100%; background: linear-gradient(135deg, var(--orange), #e63900);
+      color: white; font-weight: 700; font-size: .95rem; letter-spacing: .04em;
+      padding: .9rem; border: none; border-radius: 10px; cursor: pointer;
+      font-family: var(--font-h); transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 20px rgba(255,107,53,.3); margin-top: .5rem;
+    }
+    .auth-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,107,53,.45); }
+    .auth-btn:active { transform: translateY(0); }
+    .auth-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .error-msg { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); border-radius: 8px; padding: .75rem 1rem; color: #f87171; font-size: .82rem; margin-bottom: 1rem; display: none; }
+    .error-msg.show { display: block; animation: fadeUp .3s ease; }
+
+    .divider-line { display: flex; align-items: center; gap: .75rem; margin: 1.5rem 0; }
+    .divider-line::before,.divider-line::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.08); }
+    .divider-line span { font-size: .72rem; color: rgba(255,255,255,.25); white-space: nowrap; }
+
+    .default-creds { background: rgba(0,212,170,.06); border: 1px solid rgba(0,212,170,.15); border-radius: 10px; padding: .875rem 1rem; font-size: .78rem; color: rgba(255,255,255,.5); line-height: 1.6; }
+    .default-creds strong { color: var(--green); font-family: var(--font-m); }
+  </style>
+</head>
+<body>
+<div class="space-bg"><div class="stars"></div><div class="stars stars2"></div><div class="nebula"></div></div>
+
+<div class="auth-page">
+  <div class="auth-wrap">
+
+    <!-- LEFT PANEL -->
+    <div class="auth-panel">
+      <div class="auth-panel-glow"></div>
+      <div class="auth-panel-logo">
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style="filter:drop-shadow(0 0 14px rgba(255,107,53,.7));margin-bottom:1rem;">
+          <circle cx="22" cy="22" r="11" fill="url(#sg-auth)"/>
+          <path d="M22 3v6M22 35v6M3 22h6M35 22h6M7.5 7.5l4.2 4.2M32.3 32.3l4.2 4.2M7.5 36.5l4.2-4.2M32.3 11.7l4.2-4.2" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/>
+          <defs><radialGradient id="sg-auth" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff9c4"/><stop offset="55%" stop-color="#ff9800"/><stop offset="100%" stop-color="#e64a00"/></radialGradient></defs>
+        </svg>
+        <div style="font-family:var(--font-h);font-size:1rem;font-weight:800;background:linear-gradient(135deg,#ff8c55,#ffd166);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">SolarSentinel</div>
+        <div style="font-size:.6rem;color:rgba(255,255,255,.3);letter-spacing:.15em;text-transform:uppercase;font-family:var(--font-m);">Space Weather Intelligence Agency</div>
+      </div>
+      <div>
+        <div class="auth-panel-title">Monitor the <span>Sun's Activity</span> in Real Time</div>
+        <div class="auth-panel-desc">Access live NASA & NOAA space weather data, AI-powered solar flare predictions, and geomagnetic storm alerts.</div>
+      </div>
+      <div class="auth-panel-stats">
+        <div class="auth-stat-row"><div class="auth-stat-icon">📡</div>Live NASA DONKI data feed</div>
+        <div class="auth-stat-row"><div class="auth-stat-icon">🤖</div>ML flare prediction engine</div>
+        <div class="auth-stat-row"><div class="auth-stat-icon">🚨</div>Real-time NOAA alerts</div>
+        <div class="auth-stat-row"><div class="auth-stat-icon">📊</div>Kp index & solar wind charts</div>
+      </div>
+    </div>
+
+    <!-- RIGHT FORM -->
+    <div class="auth-form-side">
+      <div class="auth-form-title">Welcome Back</div>
+      <div class="auth-form-sub">Don't have an account? <a href="/register.html">Create one →</a></div>
+
+      <div class="error-msg" id="errorMsg"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input class="form-input" type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input class="form-input" type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password"/>
+        </div>
+        <button class="auth-btn" type="submit" id="loginBtn">
+          Sign In to Mission Control →
+        </button>
+      </form>
+
+      <div class="divider-line"><span>Default test account</span></div>
+      <div class="default-creds">
+        📧 Email: <strong>admin@solarsentinel.com</strong><br/>
+        🔑 Password: <strong>Solar2026!</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "https://solar-flare-api-1mvi.onrender.com";
+
+// If already logged in, skip to dashboard
+const tok = localStorage.getItem("ss_token");
+if (tok) { window.location.href = "/index.html"; }
+
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("loginBtn");
+  const err = document.getElementById("errorMsg");
+  err.classList.remove("show");
+  btn.disabled = true; btn.textContent = "Signing in...";
+
+  const email    = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) { throw new Error(data.detail || "Login failed"); }
+
+    // Store token and user info
+    localStorage.setItem("ss_token", data.access_token);
+    localStorage.setItem("ss_user", JSON.stringify(data.user));
+    window.location.href = "/index.html";
+
+  } catch (ex) {
+    err.textContent = "⚠️ " + ex.message;
+    err.classList.add("show");
+    document.getElementById("email").classList.add("error");
+    document.getElementById("password").classList.add("error");
+    btn.disabled = false; btn.textContent = "Sign In to Mission Control →";
+  }
+});
+
+// Clear error on input
+["email","password"].forEach(id => {
+  document.getElementById(id).addEventListener("input", () => {
+    document.getElementById(id).classList.remove("error");
+    document.getElementById("errorMsg").classList.remove("show");
+  });
+});
+</script>
+</body>
+</html>
